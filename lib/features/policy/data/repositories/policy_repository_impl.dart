@@ -1,6 +1,6 @@
 import 'package:dartz/dartz.dart';
-import 'package:dio/dio.dart';
 
+import '../../../../core/error/error_mapper.dart';
 import '../../../../core/error/failure.dart';
 import '../../domain/entities/field_definition_entity.dart';
 import '../../domain/entities/policy_entity.dart';
@@ -27,11 +27,9 @@ class PolicyRepositoryImpl implements PolicyRepository {
         subjectId,
         namespace,
       );
-      return Right(policies);
-    } on DioException catch (e) {
-      return Left(ServerFailure(e.message ?? 'Failed to load policies'));
+      return Right(List<PolicyEntity>.from(policies));
     } catch (e) {
-      return Left(UnknownFailure(e.toString()));
+      return Left(ErrorMapper.from(e));
     }
   }
 
@@ -51,14 +49,8 @@ class PolicyRepositoryImpl implements PolicyRepository {
         models,
       );
       return Right(message);
-    } on DioException catch (e) {
-      String msg = 'Failed to save policies';
-      if (e.response?.data != null && e.response?.data is Map) {
-        msg = e.response?.data['message'] ?? msg;
-      }
-      return Left(ServerFailure(msg));
     } catch (e) {
-      return Left(UnknownFailure(e.toString()));
+      return Left(ErrorMapper.from(e));
     }
   }
 
@@ -68,11 +60,9 @@ class PolicyRepositoryImpl implements PolicyRepository {
   }) async {
     try {
       final fields = await remoteDataSource.fetchFields(permissionCode);
-      return Right(fields);
-    } on DioException catch (e) {
-      return Left(ServerFailure(e.message ?? 'Failed to load fields'));
+      return Right(List<FieldDefinitionEntity>.from(fields));
     } catch (e) {
-      return Left(UnknownFailure(e.toString()));
+      return Left(ErrorMapper.from(e));
     }
   }
 
@@ -80,9 +70,9 @@ class PolicyRepositoryImpl implements PolicyRepository {
   Future<Either<Failure, List<RoleDtoEntity>>> getRoles() async {
     try {
       final roles = await remoteDataSource.fetchRoles();
-      return Right(roles);
+      return Right(List<RoleDtoEntity>.from(roles));
     } catch (e) {
-      return Left(UnknownFailure(e.toString()));
+      return Left(ErrorMapper.from(e));
     }
   }
 
@@ -90,9 +80,9 @@ class PolicyRepositoryImpl implements PolicyRepository {
   Future<Either<Failure, List<UserDtoEntity>>> getUsers() async {
     try {
       final users = await remoteDataSource.fetchUsers();
-      return Right(users);
+      return Right(List<UserDtoEntity>.from(users));
     } catch (e) {
-      return Left(UnknownFailure(e.toString()));
+      return Left(ErrorMapper.from(e));
     }
   }
 
@@ -135,7 +125,7 @@ class PolicyRepositoryImpl implements PolicyRepository {
       );
       return Right(result);
     } catch (e) {
-      return Left(UnknownFailure(e.toString()));
+      return Left(ErrorMapper.from(e));
     }
   }
 }

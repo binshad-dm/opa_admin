@@ -46,7 +46,7 @@ class ConditionBuilderCubit extends Cubit<ConditionBuilderState> {
         error: failure.message,
       )),
       (fields) => emit(state.copyWith(
-        fields: fields,
+        fields: List<FieldDefinitionEntity>.from(fields),
         isLoadingFields: false,
       )),
     );

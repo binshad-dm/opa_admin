@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/design/widgets/app_searchable_field.dart';
+import '../../../../core/design/widgets/app_dropdown_field.dart';
 import '../../../../core/service_locator.dart';
 import '../../domain/entities/dynamic_option_entity.dart';
 import '../../domain/usecases/get_dynamic_options_usecase.dart';
@@ -24,65 +24,87 @@ class DynamicDropdownWidget extends StatefulWidget {
 }
 
 class _DynamicDropdownWidgetState extends State<DynamicDropdownWidget> {
-  final TextEditingController _controller = TextEditingController();
+  List<DynamicOptionEntity> _options = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    if (widget.value != null && widget.value.toString().isNotEmpty) {
-      _controller.text = widget.value.toString();
-    }
+    _fetchOptions();
   }
 
   @override
   void didUpdateWidget(DynamicDropdownWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.value != oldWidget.value) {
-      _controller.text = widget.value?.toString() ?? '';
+    if (widget.endpoint != oldWidget.endpoint ||
+        widget.permissionCode != oldWidget.permissionCode) {
+      _fetchOptions();
     }
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Future<List<DynamicOptionEntity>> _fetchOptions(String query) async {
+  Future<void> _fetchOptions() async {
+    setState(() => _isLoading = true);
     final useCase = sl<GetDynamicOptionsUseCase>();
     final result = await useCase(
       permissionCode: widget.permissionCode,
       endpoint: widget.endpoint,
       page: 0,
-      search: query,
+      search: '',
     );
 
-    return result.fold(
-      (_) => <DynamicOptionEntity>[],
-      (data) => (data['content'] as List<dynamic>? ?? []).cast<DynamicOptionEntity>(),
-    );
+    if (mounted) {
+      result.fold(
+        (_) => setState(() {
+          _options = [];
+          _isLoading = false;
+        }),
+        (data) => setState(() {
+          _options =
+              (data['content'] as List<dynamic>? ?? []).cast<DynamicOptionEntity>();
+          _isLoading = false;
+        }),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 220,
-      child: AppSearchableField<DynamicOptionEntity>(
-        controller: _controller,
+    if (_isLoading) {
+      return const SizedBox(
+        width: 140,
+        height: 38,
+        child: Center(
+          child: SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+
+    final items = _options
+        .map((opt) => DropdownMenuItem<String>(
+              value: opt.id,
+              child: Text(
+                opt.displayName,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 13),
+              ),
+            ))
+        .toList();
+
+    final currentVal = items.any((i) => i.value == widget.value?.toString())
+        ? widget.value?.toString()
+        : null;
+
+    return Expanded(
+      child: AppDropdownField<String>(
+        value: currentVal,
         hintText: 'Select option...',
-        suggestionsCallback: _fetchOptions,
-        itemToString: (opt) => opt.displayName,
-        itemBuilder: (context, opt) {
-          return Text(
-            opt.displayName,
-            style: const TextStyle(fontSize: 13),
-          );
-        },
-        onSuggestionSelected: (opt) {
-          widget.onChange(opt.id);
-        },
-        onChanged: (text) {
-          widget.onChange(text);
+        items: items,
+        onChanged: (val) {
+          if (val != null) widget.onChange(val);
         },
       ),
     );

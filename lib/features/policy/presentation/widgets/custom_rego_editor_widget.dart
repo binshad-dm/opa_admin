@@ -18,7 +18,7 @@ class CustomRegoEditorWidget extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Write custom Rego policy code. Helper rules or direct boolean expressions can be provided here.',
+          "Write custom Rego code. You do not need to specify `package` or `allow_rule` / `deny_rule` headers. Just provide helper rules if needed, or directly write logic.",
           style: TextStyle(fontSize: 12, color: Colors.grey),
         ),
         const SizedBox(height: 12),
@@ -29,17 +29,40 @@ class CustomRegoEditorWidget extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.grey.shade700),
             ),
-            padding: const EdgeInsets.all(8),
-            child: AppTextFormField(
-              initialValue: snippet,
-              maxLines: null,
-              hintText: '# Write Rego code snippet here...\nallow {\n    input.user.role == "ADMIN"\n}',
-              style: const TextStyle(
-                fontFamily: 'monospace',
-                fontSize: 13,
-                color: Color(0xFFD4D4D4),
+            padding: const EdgeInsets.all(4),
+            child: Scrollbar(
+              thumbVisibility: true,
+              child: SingleChildScrollView(
+                child: AppTextFormField(
+                  initialValue: snippet,
+                  maxLines: null,
+                  keyboardType: TextInputType.multiline,
+                  hintText:
+                      '# Write Rego code snippet here...\nallow {\n    input.user.role == "ADMIN"\n}',
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 13,
+                    color: Color(0xFFD4D4D4),
+                    height: 1.4,
+                  ),
+                  decoration: const InputDecoration(
+                    hintText:
+                        '# Write Rego code snippet here...\nallow {\n    input.user.role == "ADMIN"\n}',
+                    hintStyle: TextStyle(
+                      color: Color(0xFF6A9955),
+                      fontSize: 13,
+                      fontFamily: 'monospace',
+                    ),
+                    filled: true,
+                    fillColor: Colors.transparent,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    contentPadding: EdgeInsets.all(8),
+                  ),
+                  onChanged: onChanged,
+                ),
               ),
-              onChanged: onChanged,
             ),
           ),
         ),

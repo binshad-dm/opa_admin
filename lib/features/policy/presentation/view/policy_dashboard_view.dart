@@ -66,6 +66,12 @@ class _PolicyDashboardContent extends StatelessWidget {
                 type: SnackBarType.failure,
               );
             }
+          } else if (state is PolicyError) {
+            showCustomSnackBar(
+              context: context,
+              message: state.message,
+              type: SnackBarType.failure,
+            );
           }
         },
         builder: (context, state) {

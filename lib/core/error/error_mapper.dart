@@ -57,7 +57,8 @@ class ErrorMapper {
         // ── Supervisor-only close endpoint fallback ──────────────────────────
         if (path.contains('/close')) {
           return const NetworkFailure(
-              'Only a Supervisor can complete this case sheet.');
+            'Only a Supervisor can complete this case sheet.',
+          );
         }
 
         // ── Fallback: never show raw Dio message for client errors ──────────
@@ -74,12 +75,14 @@ class ErrorMapper {
       }
       if (s >= 500) {
         return const NetworkFailure(
-            'Something went wrong. Please try again later.');
+          'Something went wrong. Please try again later.',
+        );
       }
 
       // No status code (connection error, timeout, etc.)
       return const NetworkFailure(
-          'Unable to connect. Please check your network.');
+        'Unable to connect. Please check your network.',
+      );
     }
     if (e is Failure) return e;
     if (e is AppException) return UnknownFailure(e.message);

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/design/widgets/app_button.dart';
 import '../../../../core/service_locator.dart';
+import '../../../../core/shared/snackbar.dart';
 import '../../domain/entities/policy_entity.dart';
 import '../view_model/condition_builder_cubit.dart';
 import '../view_model/condition_builder_state.dart';
@@ -52,7 +53,16 @@ class ConditionBuilderDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => sl<ConditionBuilderCubit>()..init(permissionCode, policy),
-      child: BlocBuilder<ConditionBuilderCubit, ConditionBuilderState>(
+      child: BlocConsumer<ConditionBuilderCubit, ConditionBuilderState>(
+        listener: (context, state) {
+          if (state.error != null && state.error!.isNotEmpty) {
+            showCustomSnackBar(
+              context: context,
+              message: state.error!,
+              type: SnackBarType.failure,
+            );
+          }
+        },
         builder: (context, state) {
           final cubit = context.read<ConditionBuilderCubit>();
 

@@ -116,7 +116,8 @@ class PolicyRemoteDataSourceImpl implements PolicyRemoteDataSource {
       if (response.data != null) {
         if (response.data is Map && response.data['message'] != null) {
           return response.data['message'].toString();
-        } else if (response.data is String && (response.data as String).isNotEmpty) {
+        } else if (response.data is String &&
+            (response.data as String).isNotEmpty) {
           return response.data as String;
         }
       }
@@ -125,7 +126,7 @@ class PolicyRemoteDataSourceImpl implements PolicyRemoteDataSource {
     throw DioException(
       requestOptions: response.requestOptions,
       response: response,
-      error: 'Failed to save policies',
+      error: response.data?.toString() ?? 'Failed to save policies',
     );
   }
 
