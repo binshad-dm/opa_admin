@@ -18,7 +18,8 @@ class ConditionBuilderDialog extends StatelessWidget {
     Map<String, dynamic>? expressionJson,
     bool useCustomRego,
     String customRegoSnippet,
-  ) onApply;
+  )
+  onApply;
 
   const ConditionBuilderDialog({
     super.key,
@@ -36,7 +37,8 @@ class ConditionBuilderDialog extends StatelessWidget {
       Map<String, dynamic>? expressionJson,
       bool useCustomRego,
       String customRegoSnippet,
-    ) onApply,
+    )
+    onApply,
   }) {
     return showDialog(
       context: context,
@@ -52,7 +54,8 @@ class ConditionBuilderDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => sl<ConditionBuilderCubit>()..init(permissionCode, policy),
+      create: (context) =>
+          sl<ConditionBuilderCubit>()..init(permissionCode, policy),
       child: BlocConsumer<ConditionBuilderCubit, ConditionBuilderState>(
         listener: (context, state) {
           if (state.error != null && state.error!.isNotEmpty) {
@@ -67,7 +70,9 @@ class ConditionBuilderDialog extends StatelessWidget {
           final cubit = context.read<ConditionBuilderCubit>();
 
           return Dialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             child: Container(
               width: 1100,
@@ -115,71 +120,138 @@ class ConditionBuilderDialog extends StatelessWidget {
                     child: state.isLoadingFields
                         ? const Center(child: CircularProgressIndicator())
                         : state.useCustomRego
-                            ? CustomRegoEditorWidget(
-                                snippet: state.customRegoSnippet,
-                                onChanged: cubit.setCustomRegoSnippet,
-                              )
-                            : Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Left Column: Group Tree Builder
-                                  Expanded(
-                                    flex: 6,
-                                    child: SingleChildScrollView(
-                                      child: ConditionGroupWidget(
-                                        node: state.expressionTree,
-                                        fields: state.fields,
-                                        permissionCode: permissionCode,
-                                        onChange: cubit.updateTree,
-                                        isRoot: true,
-                                      ),
-                                    ),
+                        ? CustomRegoEditorWidget(
+                            snippet: state.customRegoSnippet,
+                            onChanged: cubit.setCustomRegoSnippet,
+                          )
+                        : Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Left Column: Group Tree Builder
+                              Expanded(
+                                flex: 6,
+                                child: SingleChildScrollView(
+                                  child: ConditionGroupWidget(
+                                    node: state.expressionTree,
+                                    fields: state.fields,
+                                    permissionCode: permissionCode,
+                                    onChange: cubit.updateTree,
+                                    isRoot: true,
                                   ),
-                                  const SizedBox(width: 16),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
 
-                                  // Right Column: Preview
-                                  Expanded(
+                              // Right Column: Preview
+                              Builder(
+                                builder: (context) {
+                                  final hasEmptyGroup =
+                                      !state.useCustomRego &&
+                                      cubit.hasEmptyGroup();
+                                  return Expanded(
                                     flex: 4,
                                     child: Container(
                                       decoration: BoxDecoration(
                                         color: Colors.black.withOpacity(0.2),
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(
-                                          color: Theme.of(context).dividerColor.withOpacity(0.2),
+                                          color: hasEmptyGroup
+                                              ? Colors.redAccent.withOpacity(
+                                                  0.5,
+                                                )
+                                              : Theme.of(
+                                                  context,
+                                                ).dividerColor.withOpacity(0.2),
                                         ),
                                       ),
                                       padding: const EdgeInsets.all(16),
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
-                                          const Text(
-                                            'PREVIEW',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.grey,
-                                              letterSpacing: 1.2,
-                                            ),
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              const Text(
+                                                'PREVIEW',
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.grey,
+                                                  letterSpacing: 1.2,
+                                                ),
+                                              ),
+                                              // if (hasEmptyGroup)
+                                              //   Container(
+                                              //     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                              //     decoration: BoxDecoration(
+                                              //       color: Colors.redAccent.withOpacity(0.2),
+                                              //       borderRadius: BorderRadius.circular(4),
+                                              //       border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
+                                              //     ),
+                                              //     child: const Text(
+                                              //       'EMPTY GROUP DETECTED',
+                                              //       style: TextStyle(
+                                              //         fontSize: 10,
+                                              //         fontWeight: FontWeight.bold,
+                                              //         color: Colors.redAccent,
+                                              //       ),
+                                              //     ),
+                                              //   ),
+                                            ],
                                           ),
                                           const SizedBox(height: 12),
                                           Expanded(
                                             child: SingleChildScrollView(
                                               child: Text(
                                                 cubit.generatePreview(),
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   fontFamily: 'monospace',
                                                   fontSize: 13,
                                                   height: 1.5,
+                                                  color: hasEmptyGroup
+                                                      ? Colors.orangeAccent
+                                                      : null,
                                                 ),
                                               ),
                                             ),
                                           ),
+                                          // if (hasEmptyGroup) ...[
+                                          //   const SizedBox(height: 8),
+                                          //   Container(
+                                          //     padding: const EdgeInsets.all(8),
+                                          //     decoration: BoxDecoration(
+                                          //       color: Colors.redAccent.withOpacity(0.1),
+                                          //       borderRadius: BorderRadius.circular(6),
+                                          //       border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+                                          //     ),
+                                          //     child: const Row(
+                                          //       children: [
+                                          //         Icon(Icons.warning_amber_rounded, size: 16, color: Colors.redAccent),
+                                          //         SizedBox(width: 6),
+                                          //         Expanded(
+                                          //           child: Text(
+                                          //             'Empty group detected in preview section. Add rules or remove empty group to proceed.',
+                                          //             style: TextStyle(
+                                          //               color: Colors.redAccent,
+                                          //               fontSize: 11,
+                                          //               fontWeight: FontWeight.w500,
+                                          //             ),
+                                          //           ),
+                                          //         ),
+                                          //       ],
+                                          //     ),
+                                          //   ),
+                                          // ],
                                         ],
                                       ),
                                     ),
-                                  ),
-                                ],
+                                  );
+                                },
                               ),
+                            ],
+                          ),
                   ),
                   const Divider(height: 24),
 
@@ -194,11 +266,29 @@ class ConditionBuilderDialog extends StatelessWidget {
                       const SizedBox(width: 12),
                       AppButton(
                         text: 'Apply',
+                        enabled: cubit.isValid,
                         onPressed: () {
+                          if (!cubit.isValid) {
+                            showCustomSnackBar(
+                              context: context,
+                              message: state.useCustomRego
+                                  ? 'Cannot apply: Custom Rego snippet is empty.'
+                                  : 'Cannot apply: Empty group present in preview section.',
+                              type: SnackBarType.alert,
+                            );
+                            return;
+                          }
+
                           if (state.useCustomRego) {
-                            onApply(permissionCode, null, true, state.customRegoSnippet);
+                            onApply(
+                              permissionCode,
+                              null,
+                              true,
+                              state.customRegoSnippet,
+                            );
                           } else {
-                            final treeJson = state.expressionTree.children.isEmpty
+                            final treeJson =
+                                state.expressionTree.children.isEmpty
                                 ? null
                                 : state.expressionTree.toJson();
                             onApply(permissionCode, treeJson, false, '');

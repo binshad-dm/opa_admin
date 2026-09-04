@@ -125,4 +125,22 @@ class ConditionBuilderCubit extends Cubit<ConditionBuilderState> {
     }
     return '';
   }
+
+  bool hasEmptyGroup([ConditionNodeEntity? node]) {
+    final current = node ?? state.expressionTree;
+    if (current is ConditionGroupEntity) {
+      if (current.children.isEmpty) return true;
+      for (final child in current.children) {
+        if (hasEmptyGroup(child)) return true;
+      }
+    }
+    return false;
+  }
+
+  bool get isValid {
+    if (state.useCustomRego) {
+      return state.customRegoSnippet.trim().isNotEmpty;
+    }
+    return !hasEmptyGroup();
+  }
 }
