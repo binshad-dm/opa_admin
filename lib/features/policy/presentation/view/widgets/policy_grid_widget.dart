@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../domain/entities/policy_entity.dart';
+import '../../../domain/entities/policy_entity.dart';
 import 'policy_card_widget.dart';
 
 class PolicyGridWidget extends StatelessWidget {
@@ -24,7 +24,11 @@ class PolicyGridWidget extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.security_outlined, size: 48, color: Colors.grey.shade400),
+              Icon(
+                Icons.security_outlined,
+                size: 48,
+                color: Colors.grey.shade400,
+              ),
               const SizedBox(height: 12),
               const Text(
                 'No policies found for this module and subject.',
@@ -56,7 +60,9 @@ class PolicyGridWidget extends StatelessWidget {
             spacing: 16,
             runSpacing: 16,
             children: entries.map((entry) {
-              final width = (constraints.maxWidth - (16 * (crossAxisCount - 1))) / crossAxisCount;
+              final width =
+                  (constraints.maxWidth - (16 * (crossAxisCount - 1))) /
+                  crossAxisCount;
 
               return SizedBox(
                 width: width,
@@ -81,7 +87,11 @@ class PolicyGridWidget extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.folder_outlined, size: 18, color: Color(0xFF0F4C81)),
+                          const Icon(
+                            Icons.folder_outlined,
+                            size: 18,
+                            color: Color(0xFF0F4C81),
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(

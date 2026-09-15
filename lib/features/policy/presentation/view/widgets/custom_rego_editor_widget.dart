@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/design/widgets/app_text_form_field.dart';
+import '../../../../../core/design/widgets/app_text_form_field.dart';
 
 class CustomRegoEditorWidget extends StatelessWidget {
   final String snippet;

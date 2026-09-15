@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/design/widgets/app_dropdown_field.dart';
-import '../../../../core/design/widgets/app_text_form_field.dart';
-import '../../domain/entities/condition_tree_entity.dart';
-import '../../domain/entities/field_definition_entity.dart';
+import '../../../../../core/design/widgets/app_dropdown_field.dart';
+import '../../../../../core/design/widgets/app_text_form_field.dart';
+import '../../../domain/entities/condition_tree_entity.dart';
+import '../../../domain/entities/field_definition_entity.dart';
 import 'dynamic_dropdown_widget.dart';
 
 class ConditionRuleWidget extends StatelessWidget {
@@ -71,10 +71,12 @@ class ConditionRuleWidget extends StatelessWidget {
 
     if (field.allowedValues != null && field.allowedValues!.isNotEmpty) {
       final items = field.allowedValues!
-          .map((v) => DropdownMenuItem<String>(
-                value: v,
-                child: Text(v, style: const TextStyle(fontSize: 13)),
-              ))
+          .map(
+            (v) => DropdownMenuItem<String>(
+              value: v,
+              child: Text(v, style: const TextStyle(fontSize: 13)),
+            ),
+          )
           .toList();
       final currentVal = items.any((i) => i.value == rule.value?.toString())
           ? rule.value?.toString()
@@ -98,8 +100,14 @@ class ConditionRuleWidget extends StatelessWidget {
           value: (valStr == 'true' || valStr == 'false') ? valStr : null,
           hintText: 'Select...',
           items: const [
-            DropdownMenuItem(value: 'true', child: Text('True', style: TextStyle(fontSize: 13))),
-            DropdownMenuItem(value: 'false', child: Text('False', style: TextStyle(fontSize: 13))),
+            DropdownMenuItem(
+              value: 'true',
+              child: Text('True', style: TextStyle(fontSize: 13)),
+            ),
+            DropdownMenuItem(
+              value: 'false',
+              child: Text('False', style: TextStyle(fontSize: 13)),
+            ),
           ],
           onChanged: (val) => onChange(rule.copyWith(value: val == 'true')),
         ),
@@ -112,7 +120,8 @@ class ConditionRuleWidget extends StatelessWidget {
           keyboardType: TextInputType.number,
           hintText: 'Value...',
           initialValue: rule.value?.toString() ?? '',
-          onChanged: (val) => onChange(rule.copyWith(value: num.tryParse(val) ?? val)),
+          onChanged: (val) =>
+              onChange(rule.copyWith(value: num.tryParse(val) ?? val)),
         ),
       );
     }
@@ -136,7 +145,8 @@ class ConditionRuleWidget extends StatelessWidget {
     dynamic defaultValue = '';
     if (newField?.fieldType == 'BOOLEAN') {
       defaultValue = true;
-    } else if (newField?.allowedValues != null && newField!.allowedValues!.isNotEmpty) {
+    } else if (newField?.allowedValues != null &&
+        newField!.allowedValues!.isNotEmpty) {
       defaultValue = newField.allowedValues!.first;
     }
 
@@ -146,14 +156,16 @@ class ConditionRuleWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fieldItems = fields
-        .map((f) => DropdownMenuItem<String>(
-              value: f.fieldName,
-              child: Text(
-                f.displayName,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 13),
-              ),
-            ))
+        .map(
+          (f) => DropdownMenuItem<String>(
+            value: f.fieldName,
+            child: Text(
+              f.displayName,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 13),
+            ),
+          ),
+        )
         .toList();
 
     final currentField = fieldItems.any((i) => i.value == rule.field)
@@ -189,12 +201,16 @@ class ConditionRuleWidget extends StatelessWidget {
           SizedBox(
             width: 110,
             child: AppDropdownField<String>(
-              value: compOptions.contains(rule.comparison) ? rule.comparison : '==',
+              value: compOptions.contains(rule.comparison)
+                  ? rule.comparison
+                  : '==',
               items: compOptions
-                  .map((c) => DropdownMenuItem<String>(
-                        value: c,
-                        child: Text(c, style: const TextStyle(fontSize: 13)),
-                      ))
+                  .map(
+                    (c) => DropdownMenuItem<String>(
+                      value: c,
+                      child: Text(c, style: const TextStyle(fontSize: 13)),
+                    ),
+                  )
                   .toList(),
               onChanged: (val) {
                 if (val == null) return;

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/design/widgets/app_dropdown_field.dart';
-import '../../../../core/service_locator.dart';
-import '../../domain/entities/dynamic_option_entity.dart';
-import '../../domain/usecases/get_dynamic_options_usecase.dart';
+import '../../../../../core/design/widgets/app_dropdown_field.dart';
+import '../../../../../core/service_locator.dart';
+import '../../../domain/entities/dynamic_option_entity.dart';
+import '../../../domain/usecases/get_dynamic_options_usecase.dart';
 
 class DynamicDropdownWidget extends StatefulWidget {
   final String endpoint;
@@ -59,8 +59,8 @@ class _DynamicDropdownWidgetState extends State<DynamicDropdownWidget> {
           _isLoading = false;
         }),
         (data) => setState(() {
-          _options =
-              (data['content'] as List<dynamic>? ?? []).cast<DynamicOptionEntity>();
+          _options = (data['content'] as List<dynamic>? ?? [])
+              .cast<DynamicOptionEntity>();
           _isLoading = false;
         }),
       );
@@ -84,14 +84,16 @@ class _DynamicDropdownWidgetState extends State<DynamicDropdownWidget> {
     }
 
     final items = _options
-        .map((opt) => DropdownMenuItem<String>(
-              value: opt.id,
-              child: Text(
-                opt.displayName,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 13),
-              ),
-            ))
+        .map(
+          (opt) => DropdownMenuItem<String>(
+            value: opt.id,
+            child: Text(
+              opt.displayName,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 13),
+            ),
+          ),
+        )
         .toList();
 
     final currentVal = items.any((i) => i.value == widget.value?.toString())

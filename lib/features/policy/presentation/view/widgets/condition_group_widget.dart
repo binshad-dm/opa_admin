@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/design/widgets/app_button.dart';
-import '../../../../core/design/widgets/app_dropdown_field.dart';
-import '../../domain/entities/condition_tree_entity.dart';
-import '../../domain/entities/field_definition_entity.dart';
+import '../../../../../core/design/widgets/app_button.dart';
+import '../../../../../core/design/widgets/app_dropdown_field.dart';
+import '../../../domain/entities/condition_tree_entity.dart';
+import '../../../domain/entities/field_definition_entity.dart';
 import 'condition_rule_widget.dart';
 
 class ConditionGroupWidget extends StatelessWidget {

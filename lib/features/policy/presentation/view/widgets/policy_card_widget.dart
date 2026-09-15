@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/design/widgets/app_toggle_switch.dart';
-import '../../domain/entities/policy_entity.dart';
+import '../../../../../core/design/widgets/app_toggle_switch.dart';
+import '../../../domain/entities/policy_entity.dart';
 
 class PolicyCardWidget extends StatelessWidget {
   final PolicyEntity policy;

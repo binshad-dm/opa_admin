@@ -9,9 +9,9 @@ import '../../../../core/shared/snackbar.dart';
 import '../../domain/entities/policy_entity.dart';
 import '../view_model/policy_cubit.dart';
 import '../view_model/policy_state.dart';
-import '../widgets/condition_builder_dialog.dart';
-import '../widgets/policy_grid_widget.dart';
-import '../widgets/subject_selector_widget.dart';
+import 'widgets/condition_builder_dialog.dart';
+import 'widgets/policy_grid_widget.dart';
+import 'widgets/subject_selector_widget.dart';
 
 class PolicyDashboardView extends StatelessWidget {
   const PolicyDashboardView({super.key});
