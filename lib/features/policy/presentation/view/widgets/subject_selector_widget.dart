@@ -33,7 +33,7 @@ class SubjectSelectorWidget extends StatelessWidget {
       items = roles
           .map(
             (r) => DropdownMenuItem<String>(
-              value: r.name,
+              value: r.id,
               child: Text(r.name, style: const TextStyle(fontSize: 13)),
             ),
           )
@@ -42,7 +42,7 @@ class SubjectSelectorWidget extends StatelessWidget {
       items = users
           .map(
             (u) => DropdownMenuItem<String>(
-              value: u.email,
+              value: u.id,
               child: Text(
                 u.displayName,
                 overflow: TextOverflow.ellipsis,

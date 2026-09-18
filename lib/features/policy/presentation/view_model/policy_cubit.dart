@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../domain/entities/policy_entity.dart';
@@ -43,12 +44,12 @@ class PolicyCubit extends Cubit<PolicyState> {
     });
 
     String subjectType = 'ROLE';
-    String subjectId = roles.isNotEmpty ? roles.first.name : '';
+    String subjectId = roles.isNotEmpty ? roles.first.id : '';
     String moduleName = modules.isNotEmpty ? modules.first : 'finance';
 
     if (subjectId.isEmpty && users.isNotEmpty) {
       subjectType = 'USER';
-      subjectId = users.first.email;
+      subjectId = users.first.id;
     }
 
     if (subjectId.isNotEmpty) {
@@ -61,25 +62,29 @@ class PolicyCubit extends Cubit<PolicyState> {
       List<PolicyEntity> policies = [];
       policiesRes.fold((_) {}, (p) => policies = p);
 
-      emit(PolicyLoaded(
-        subjectType: subjectType,
-        subjectId: subjectId,
-        selectedModule: moduleName,
-        availableModules: modules,
-        roles: roles,
-        users: users,
-        policies: policies,
-      ));
+      emit(
+        PolicyLoaded(
+          subjectType: subjectType,
+          subjectId: subjectId,
+          selectedModule: moduleName,
+          availableModules: modules,
+          roles: roles,
+          users: users,
+          policies: policies,
+        ),
+      );
     } else {
-      emit(PolicyLoaded(
-        subjectType: subjectType,
-        subjectId: subjectId,
-        selectedModule: moduleName,
-        availableModules: modules,
-        roles: roles,
-        users: users,
-        policies: const [],
-      ));
+      emit(
+        PolicyLoaded(
+          subjectType: subjectType,
+          subjectId: subjectId,
+          selectedModule: moduleName,
+          availableModules: modules,
+          roles: roles,
+          users: users,
+          policies: const [],
+        ),
+      );
     }
   }
 
@@ -112,15 +117,12 @@ class PolicyCubit extends Cubit<PolicyState> {
 
     String newSubjectId = '';
     if (newType == 'ROLE' && currentState.roles.isNotEmpty) {
-      newSubjectId = currentState.roles.first.name;
+      newSubjectId = currentState.roles.first.id;
     } else if (newType == 'USER' && currentState.users.isNotEmpty) {
-      newSubjectId = currentState.users.first.email;
+      newSubjectId = currentState.users.first.id;
     }
 
-    emit(currentState.copyWith(
-      subjectType: newType,
-      subjectId: newSubjectId,
-    ));
+    emit(currentState.copyWith(subjectType: newType, subjectId: newSubjectId));
 
     loadPolicies();
   }
@@ -191,10 +193,7 @@ class PolicyCubit extends Cubit<PolicyState> {
       return p;
     }).toList();
 
-    emit(currentState.copyWith(
-      policies: updated,
-      clearActivePermission: true,
-    ));
+    emit(currentState.copyWith(policies: updated, clearActivePermission: true));
   }
 
   Future<String?> savePolicies() async {
@@ -203,7 +202,9 @@ class PolicyCubit extends Cubit<PolicyState> {
 
     emit(currentState.copyWith(isSaving: true, saveError: null));
 
-    final enabledPolicies = currentState.policies.where((p) => p.enabled).toList();
+    final enabledPolicies = currentState.policies
+        .where((p) => p.enabled)
+        .toList();
 
     final result = await savePoliciesUseCase(
       subjectType: currentState.subjectType,
@@ -214,10 +215,9 @@ class PolicyCubit extends Cubit<PolicyState> {
 
     return result.fold(
       (failure) {
-        emit(currentState.copyWith(
-          isSaving: false,
-          saveError: failure.message,
-        ));
+        emit(
+          currentState.copyWith(isSaving: false, saveError: failure.message),
+        );
         return null;
       },
       (message) {
