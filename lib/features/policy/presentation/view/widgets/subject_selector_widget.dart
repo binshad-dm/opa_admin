@@ -57,45 +57,62 @@ class SubjectSelectorWidget extends StatelessWidget {
         ? subjectId
         : null;
 
-    return Wrap(
-      spacing: 16,
-      runSpacing: 12,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        SizedBox(
-          width: 160,
-          child: AppDropdownField<String>(
-            label: 'Subject Type',
-            value: subjectType,
-            items: const [
-              DropdownMenuItem(
-                value: 'ROLE',
-                child: Text('Role', style: TextStyle(fontSize: 13)),
+    return Semantics(
+      container: true,
+      explicitChildNodes: true,
+      label: 'Subject Selector',
+      child: Wrap(
+        spacing: 16,
+        runSpacing: 12,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          SizedBox(
+            width: 160,
+            child: Semantics(
+              identifier: 'subject_type_dropdown',
+              label: 'Subject Type',
+              hint: 'Select subject type: Role or User',
+              button: true,
+              child: AppDropdownField<String>(
+                label: 'Subject Type',
+                value: subjectType,
+                items: const [
+                  DropdownMenuItem(
+                    value: 'ROLE',
+                    child: Text('Role', style: TextStyle(fontSize: 13)),
+                  ),
+                  DropdownMenuItem(
+                    value: 'USER',
+                    child: Text('User', style: TextStyle(fontSize: 13)),
+                  ),
+                ],
+                onChanged: (val) {
+                  if (val != null) onSubjectTypeChanged(val);
+                },
               ),
-              DropdownMenuItem(
-                value: 'USER',
-                child: Text('User', style: TextStyle(fontSize: 13)),
+            ),
+          ),
+          SizedBox(
+            width: 280,
+            child: Semantics(
+              identifier: 'subject_id_dropdown',
+              label: isRole ? 'Select Role' : 'Select User',
+              hint: 'Select ${isRole ? "role" : "user"} to view and manage policies',
+              button: true,
+              child: AppDropdownField<String>(
+                label: 'Subject',
+                value: validValue,
+                hintText: isLoading ? 'Loading subjects...' : 'Select Subject...',
+                readOnly: isLoading || items.isEmpty,
+                items: items,
+                onChanged: (val) {
+                  if (val != null) onSubjectIdChanged(val);
+                },
               ),
-            ],
-            onChanged: (val) {
-              if (val != null) onSubjectTypeChanged(val);
-            },
+            ),
           ),
-        ),
-        SizedBox(
-          width: 280,
-          child: AppDropdownField<String>(
-            label: 'Subject',
-            value: validValue,
-            hintText: isLoading ? 'Loading subjects...' : 'Select Subject...',
-            readOnly: isLoading || items.isEmpty,
-            items: items,
-            onChanged: (val) {
-              if (val != null) onSubjectIdChanged(val);
-            },
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

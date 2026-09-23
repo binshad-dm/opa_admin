@@ -84,32 +84,48 @@ class ConditionBuilderDialog extends StatelessWidget {
                   // Modal Header
                   Row(
                     children: [
-                      Text(
-                        'Condition Builder: $permissionCode',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                      Semantics(
+                        header: true,
+                        label: 'Condition Builder for $permissionCode',
+                        child: Text(
+                          'Condition Builder: $permissionCode',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 24),
-                      Row(
-                        children: [
-                          Checkbox(
-                            value: state.useCustomRego,
-                            onChanged: (val) {
-                              cubit.setUseCustomRego(val ?? false);
-                            },
-                          ),
-                          const Text(
-                            'Use Custom Rego',
-                            style: TextStyle(fontSize: 13),
-                          ),
-                        ],
+                      Semantics(
+                        identifier: 'use_custom_rego_checkbox',
+                        label: 'Use Custom Rego checkbox',
+                        checked: state.useCustomRego,
+                        child: Row(
+                          children: [
+                            Checkbox(
+                              value: state.useCustomRego,
+                              onChanged: (val) {
+                                cubit.setUseCustomRego(val ?? false);
+                              },
+                            ),
+                            const Text(
+                              'Use Custom Rego',
+                              style: TextStyle(fontSize: 13),
+                            ),
+                          ],
+                        ),
                       ),
                       const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.of(context).pop(),
+                      Semantics(
+                        identifier: 'close_condition_builder_dialog',
+                        label: 'Close Condition Builder Dialog',
+                        button: true,
+                        tooltip: 'Close',
+                        child: IconButton(
+                          icon: const Icon(Icons.close),
+                          tooltip: 'Close',
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
                       ),
                     ],
                   ),
@@ -118,7 +134,12 @@ class ConditionBuilderDialog extends StatelessWidget {
                   // Modal Content Body
                   Expanded(
                     child: state.isLoadingFields
-                        ? const Center(child: CircularProgressIndicator())
+                        ? Center(
+                            child: Semantics(
+                              label: 'Loading condition fields',
+                              child: const CircularProgressIndicator(),
+                            ),
+                          )
                         : state.useCustomRego
                         ? CustomRegoEditorWidget(
                             snippet: state.customRegoSnippet,
@@ -130,13 +151,17 @@ class ConditionBuilderDialog extends StatelessWidget {
                               // Left Column: Group Tree Builder
                               Expanded(
                                 flex: 6,
-                                child: SingleChildScrollView(
-                                  child: ConditionGroupWidget(
-                                    node: state.expressionTree,
-                                    fields: state.fields,
-                                    permissionCode: permissionCode,
-                                    onChange: cubit.updateTree,
-                                    isRoot: true,
+                                child: Semantics(
+                                  container: true,
+                                  label: 'Condition groups and rules builder',
+                                  child: SingleChildScrollView(
+                                    child: ConditionGroupWidget(
+                                      node: state.expressionTree,
+                                      fields: state.fields,
+                                      permissionCode: permissionCode,
+                                      onChange: cubit.updateTree,
+                                      isRoot: true,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -150,101 +175,75 @@ class ConditionBuilderDialog extends StatelessWidget {
                                       cubit.hasEmptyGroup();
                                   return Expanded(
                                     flex: 4,
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: hasEmptyGroup
-                                              ? Colors.redAccent.withOpacity(
-                                                  0.5,
-                                                )
-                                              : Theme.of(
-                                                  context,
-                                                ).dividerColor.withOpacity(0.2),
-                                        ),
-                                      ),
-                                      padding: const EdgeInsets.all(16),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              const Text(
-                                                'PREVIEW',
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.grey,
-                                                  letterSpacing: 1.2,
-                                                ),
-                                              ),
-                                              // if (hasEmptyGroup)
-                                              //   Container(
-                                              //     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                              //     decoration: BoxDecoration(
-                                              //       color: Colors.redAccent.withOpacity(0.2),
-                                              //       borderRadius: BorderRadius.circular(4),
-                                              //       border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
-                                              //     ),
-                                              //     child: const Text(
-                                              //       'EMPTY GROUP DETECTED',
-                                              //       style: TextStyle(
-                                              //         fontSize: 10,
-                                              //         fontWeight: FontWeight.bold,
-                                              //         color: Colors.redAccent,
-                                              //       ),
-                                              //     ),
-                                              //   ),
-                                            ],
+                                    child: Semantics(
+                                      container: true,
+                                      label: 'Rego expression preview',
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.2),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: hasEmptyGroup
+                                                ? Colors.redAccent.withOpacity(
+                                                    0.5,
+                                                  )
+                                                : Theme.of(
+                                                    context,
+                                                  ).dividerColor.withOpacity(
+                                                    0.2,
+                                                  ),
                                           ),
-                                          const SizedBox(height: 12),
-                                          Expanded(
-                                            child: SingleChildScrollView(
-                                              child: Text(
-                                                cubit.generatePreview(),
-                                                style: TextStyle(
-                                                  fontFamily: 'monospace',
-                                                  fontSize: 13,
-                                                  height: 1.5,
-                                                  color: hasEmptyGroup
-                                                      ? Colors.orangeAccent
-                                                      : null,
+                                        ),
+                                        padding: const EdgeInsets.all(16),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              children: [
+                                                Semantics(
+                                                  header: true,
+                                                  label:
+                                                      'Rego expression preview section',
+                                                  child: const Text(
+                                                    'PREVIEW',
+                                                    style: TextStyle(
+                                                      fontSize: 11,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: Colors.grey,
+                                                      letterSpacing: 1.2,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 12),
+                                            Expanded(
+                                              child: SingleChildScrollView(
+                                                child: Semantics(
+                                                  label:
+                                                      'Preview code: ${cubit.generatePreview()}',
+                                                  child: Text(
+                                                    cubit.generatePreview(),
+                                                    style: TextStyle(
+                                                      fontFamily: 'monospace',
+                                                      fontSize: 13,
+                                                      height: 1.5,
+                                                      color: hasEmptyGroup
+                                                          ? Colors.orangeAccent
+                                                          : null,
+                                                    ),
+                                                  ),
                                                 ),
                                               ),
                                             ),
-                                          ),
-                                          // if (hasEmptyGroup) ...[
-                                          //   const SizedBox(height: 8),
-                                          //   Container(
-                                          //     padding: const EdgeInsets.all(8),
-                                          //     decoration: BoxDecoration(
-                                          //       color: Colors.redAccent.withOpacity(0.1),
-                                          //       borderRadius: BorderRadius.circular(6),
-                                          //       border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
-                                          //     ),
-                                          //     child: const Row(
-                                          //       children: [
-                                          //         Icon(Icons.warning_amber_rounded, size: 16, color: Colors.redAccent),
-                                          //         SizedBox(width: 6),
-                                          //         Expanded(
-                                          //           child: Text(
-                                          //             'Empty group detected in preview section. Add rules or remove empty group to proceed.',
-                                          //             style: TextStyle(
-                                          //               color: Colors.redAccent,
-                                          //               fontSize: 11,
-                                          //               fontWeight: FontWeight.w500,
-                                          //             ),
-                                          //           ),
-                                          //         ),
-                                          //       ],
-                                          //     ),
-                                          //   ),
-                                          // ],
-                                        ],
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   );
@@ -259,42 +258,54 @@ class ConditionBuilderDialog extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      AppOutlinedButton(
-                        text: 'Cancel',
-                        onPressed: () => Navigator.of(context).pop(),
+                      Semantics(
+                        identifier: 'condition_builder_cancel_button',
+                        button: true,
+                        label: 'Cancel condition editing',
+                        child: AppOutlinedButton(
+                          text: 'Cancel',
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
                       ),
                       const SizedBox(width: 12),
-                      AppButton(
-                        text: 'Apply',
+                      Semantics(
+                        identifier: 'condition_builder_apply_button',
+                        button: true,
                         enabled: cubit.isValid,
-                        onPressed: () {
-                          if (!cubit.isValid) {
-                            showCustomSnackBar(
-                              context: context,
-                              message: state.useCustomRego
-                                  ? 'Cannot apply: Custom Rego snippet is empty.'
-                                  : 'Cannot apply: Empty group present in preview section.',
-                              type: SnackBarType.alert,
-                            );
-                            return;
-                          }
+                        label: 'Apply condition changes',
+                        hint: 'Apply rules to policy',
+                        child: AppButton(
+                          text: 'Apply',
+                          enabled: cubit.isValid,
+                          onPressed: () {
+                            if (!cubit.isValid) {
+                              showCustomSnackBar(
+                                context: context,
+                                message: state.useCustomRego
+                                    ? 'Cannot apply: Custom Rego snippet is empty.'
+                                    : 'Cannot apply: Empty group present in preview section.',
+                                type: SnackBarType.alert,
+                              );
+                              return;
+                            }
 
-                          if (state.useCustomRego) {
-                            onApply(
-                              permissionCode,
-                              null,
-                              true,
-                              state.customRegoSnippet,
-                            );
-                          } else {
-                            final treeJson =
-                                state.expressionTree.children.isEmpty
-                                ? null
-                                : state.expressionTree.toJson();
-                            onApply(permissionCode, treeJson, false, '');
-                          }
-                          Navigator.of(context).pop();
-                        },
+                            if (state.useCustomRego) {
+                              onApply(
+                                permissionCode,
+                                null,
+                                true,
+                                state.customRegoSnippet,
+                              );
+                            } else {
+                              final treeJson =
+                                  state.expressionTree.children.isEmpty
+                                  ? null
+                                  : state.expressionTree.toJson();
+                              onApply(permissionCode, treeJson, false, '');
+                            }
+                            Navigator.of(context).pop();
+                          },
+                        ),
                       ),
                     ],
                   ),

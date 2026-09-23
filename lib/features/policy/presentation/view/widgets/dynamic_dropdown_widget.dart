@@ -70,14 +70,17 @@ class _DynamicDropdownWidgetState extends State<DynamicDropdownWidget> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const SizedBox(
+      return SizedBox(
         width: 140,
         height: 38,
         child: Center(
-          child: SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(strokeWidth: 2),
+          child: Semantics(
+            label: 'Loading dynamic options',
+            child: const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
           ),
         ),
       );
@@ -101,13 +104,18 @@ class _DynamicDropdownWidgetState extends State<DynamicDropdownWidget> {
         : null;
 
     return Expanded(
-      child: AppDropdownField<String>(
-        value: currentVal,
-        hintText: 'Select option...',
-        items: items,
-        onChanged: (val) {
-          if (val != null) widget.onChange(val);
-        },
+      child: Semantics(
+        identifier: 'dynamic_dropdown_${widget.permissionCode}',
+        label: 'Select dynamic option for ${widget.permissionCode}',
+        button: true,
+        child: AppDropdownField<String>(
+          value: currentVal,
+          hintText: 'Select option...',
+          items: items,
+          onChanged: (val) {
+            if (val != null) widget.onChange(val);
+          },
+        ),
       ),
     );
   }

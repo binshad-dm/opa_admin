@@ -19,22 +19,25 @@ class PolicyGridWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     if (policies.isEmpty) {
       return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.security_outlined,
-                size: 48,
-                color: Colors.grey.shade400,
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'No policies found for this module and subject.',
-                style: TextStyle(color: Colors.grey, fontSize: 14),
-              ),
-            ],
+        child: Semantics(
+          label: 'No policies found for this module and subject',
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.security_outlined,
+                  size: 48,
+                  color: Colors.grey.shade400,
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'No policies found for this module and subject.',
+                  style: TextStyle(color: Colors.grey, fontSize: 14),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -66,54 +69,63 @@ class PolicyGridWidget extends StatelessWidget {
 
               return SizedBox(
                 width: width,
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Theme.of(context).dividerColor.withOpacity(0.15),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.02),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
+                child: Semantics(
+                  container: true,
+                  label:
+                      '${entry.key.toUpperCase()} resource group with ${entry.value.length} policies',
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardColor,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Theme.of(context).dividerColor.withOpacity(0.15),
                       ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.folder_outlined,
-                            size: 18,
-                            color: Color(0xFF0F4C81),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              entry.key.toUpperCase(),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.02),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Semantics(
+                          header: true,
+                          label: '${entry.key.toUpperCase()} policies section',
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.folder_outlined,
+                                size: 18,
                                 color: Color(0xFF0F4C81),
                               ),
-                            ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  entry.key.toUpperCase(),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    color: Color(0xFF0F4C81),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      ...entry.value.map(
-                        (policy) => PolicyCardWidget(
-                          policy: policy,
-                          onToggle: onTogglePolicy,
-                          onEditConditions: onEditConditions,
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 12),
+                        ...entry.value.map(
+                          (policy) => PolicyCardWidget(
+                            policy: policy,
+                            onToggle: onTogglePolicy,
+                            onEditConditions: onEditConditions,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );

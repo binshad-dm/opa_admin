@@ -79,31 +79,42 @@ class _PolicyDashboardContent extends StatelessWidget {
 
           if (state is PolicyLoading) {
             return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const CircularProgressIndicator(),
-                  const SizedBox(height: 16),
-                  Text(state.message ?? 'Loading...'),
-                ],
+              child: Semantics(
+                label: state.message ?? 'Loading policy dashboard',
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(state.message ?? 'Loading...'),
+                  ],
+                ),
               ),
             );
           }
 
           if (state is PolicyError) {
             return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                  const SizedBox(height: 12),
-                  Text(state.message),
-                  const SizedBox(height: 16),
-                  AppButton(
-                    text: 'Retry',
-                    onPressed: () => cubit.initDashboard(),
-                  ),
-                ],
+              child: Semantics(
+                label: 'Error: ${state.message}',
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    const SizedBox(height: 12),
+                    Text(state.message),
+                    const SizedBox(height: 16),
+                    Semantics(
+                      identifier: 'retry_button',
+                      button: true,
+                      label: 'Retry loading dashboard',
+                      child: AppButton(
+                        text: 'Retry',
+                        onPressed: () => cubit.initDashboard(),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           }
@@ -127,77 +138,98 @@ class _PolicyDashboardContent extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  pageTitle,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headlineSmall
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: const Color(0xFF0F4C81),
-                                      ),
+                                Semantics(
+                                  header: true,
+                                  label: pageTitle,
+                                  child: Text(
+                                    pageTitle,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headlineSmall
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: const Color(0xFF0F4C81),
+                                        ),
+                                  ),
                                 ),
                                 const SizedBox(height: 4),
-                                const Text(
-                                  'Manage Open Policy Agent permissions, conditions, and custom Rego expressions.',
-                                  style: TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 13,
+                                Semantics(
+                                  label:
+                                      'Manage Open Policy Agent permissions, conditions, and custom Rego expressions.',
+                                  child: const Text(
+                                    'Manage Open Policy Agent permissions, conditions, and custom Rego expressions.',
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 13,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          AppButton(
-                            text: state.isSaving ? 'Saving...' : 'Save Changes',
-                            icon: state.isSaving
-                                ? const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : const Icon(Icons.save_outlined, size: 18),
+                          Semantics(
+                            identifier: 'save_policies_button',
+                            button: true,
                             enabled: !state.isSaving,
-                            onPressed: () async {
-                              final message = await cubit.savePolicies();
-                              if (context.mounted &&
-                                  message != null &&
-                                  message.isNotEmpty) {
-                                showCustomSnackBar(
-                                  context: context,
-                                  message: message,
-                                  type: SnackBarType.success,
-                                );
-                              }
-                            },
+                            label: state.isSaving
+                                ? 'Saving policy changes'
+                                : 'Save Changes',
+                            hint: 'Save all policy changes',
+                            child: AppButton(
+                              text: state.isSaving ? 'Saving...' : 'Save Changes',
+                              icon: state.isSaving
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Icon(Icons.save_outlined, size: 18),
+                              enabled: !state.isSaving,
+                              onPressed: () async {
+                                final message = await cubit.savePolicies();
+                                if (context.mounted &&
+                                    message != null &&
+                                    message.isNotEmpty) {
+                                  showCustomSnackBar(
+                                    context: context,
+                                    message: message,
+                                    type: SnackBarType.success,
+                                  );
+                                }
+                              },
+                            ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 20),
 
                       // Controls Bar: Subject Selector
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).cardColor,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Theme.of(
-                              context,
-                            ).dividerColor.withOpacity(0.15),
+                      Semantics(
+                        container: true,
+                        label: 'Subject selector section',
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).cardColor,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Theme.of(
+                                context,
+                              ).dividerColor.withOpacity(0.15),
+                            ),
                           ),
-                        ),
-                        child: SubjectSelectorWidget(
-                          subjectType: state.subjectType,
-                          subjectId: state.subjectId,
-                          roles: state.roles,
-                          users: state.users,
-                          onSubjectTypeChanged: cubit.setSubjectType,
-                          onSubjectIdChanged: cubit.setSubjectId,
+                          child: SubjectSelectorWidget(
+                            subjectType: state.subjectType,
+                            subjectId: state.subjectId,
+                            roles: state.roles,
+                            users: state.users,
+                            onSubjectTypeChanged: cubit.setSubjectType,
+                            onSubjectIdChanged: cubit.setSubjectId,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -210,22 +242,29 @@ class _PolicyDashboardContent extends StatelessWidget {
                             final isSelected = state.selectedModule == mod;
                             return Padding(
                               padding: const EdgeInsets.only(right: 8.0),
-                              child: ChoiceChip(
-                                label: Text(
-                                  mod.toUpperCase(),
-                                  style: TextStyle(
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                    color: isSelected
-                                        ? Colors.white
-                                        : const Color(0xFF0F4C81),
-                                  ),
-                                ),
+                              child: Semantics(
+                                identifier: 'module_tab_${mod.toLowerCase()}',
+                                label: '$mod module tab',
+                                button: true,
                                 selected: isSelected,
-                                selectedColor: const Color(0xFF0F4C81),
-                                backgroundColor: Theme.of(context).cardColor,
-                                onSelected: (_) => cubit.setSelectedModule(mod),
+                                child: ChoiceChip(
+                                  label: Text(
+                                    mod.toUpperCase(),
+                                    style: TextStyle(
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                      color: isSelected
+                                          ? Colors.white
+                                          : const Color(0xFF0F4C81),
+                                    ),
+                                  ),
+                                  selected: isSelected,
+                                  selectedColor: const Color(0xFF0F4C81),
+                                  backgroundColor: Theme.of(context).cardColor,
+                                  onSelected: (_) =>
+                                      cubit.setSelectedModule(mod),
+                                ),
                               ),
                             );
                           }).toList(),
@@ -235,17 +274,21 @@ class _PolicyDashboardContent extends StatelessWidget {
 
                       // Policy Grid List Body
                       Expanded(
-                        child: PolicyGridWidget(
-                          policies: state.policies,
-                          onTogglePolicy: cubit.togglePolicy,
-                          onEditConditions: (permissionCode) {
-                            _openConditionBuilder(
-                              context,
-                              cubit,
-                              permissionCode,
-                              state.policies,
-                            );
-                          },
+                        child: Semantics(
+                          container: true,
+                          label: 'Policy list for module ${state.selectedModule}',
+                          child: PolicyGridWidget(
+                            policies: state.policies,
+                            onTogglePolicy: cubit.togglePolicy,
+                            onEditConditions: (permissionCode) {
+                              _openConditionBuilder(
+                                context,
+                                cubit,
+                                permissionCode,
+                                state.policies,
+                              );
+                            },
+                          ),
                         ),
                       ),
                     ],
