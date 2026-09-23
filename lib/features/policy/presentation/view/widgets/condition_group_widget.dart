@@ -50,6 +50,7 @@ class ConditionGroupWidget extends StatelessWidget {
       field: defaultField?.fieldName ?? '',
       comparison: '==',
       value: defaultValue,
+      valueType: 'VALUE',
     );
 
     final newChildren = List<ConditionNodeEntity>.from(node.children)

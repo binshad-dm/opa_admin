@@ -34,7 +34,11 @@ class SubjectSelectorWidget extends StatelessWidget {
           .map(
             (r) => DropdownMenuItem<String>(
               value: r.id,
-              child: Text(r.name, style: const TextStyle(fontSize: 13)),
+              child: Text(
+                r.name,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 13),
+              ),
             ),
           )
           .toList();

@@ -10,9 +10,9 @@ class UserDtoModel extends UserDtoEntity {
 
   factory UserDtoModel.fromJson(Map<String, dynamic> json) {
     return UserDtoModel(
-      id: (json['id'] ?? json['email']).toString(),
-      email: json['email'] as String? ?? '',
-      firstName: json['firstName'] as String?,
+      id: (json['id'] ?? json['subjectId'] ?? json['email'] ?? '').toString(),
+      email: (json['email'] ?? json['subjectName'] ?? '').toString(),
+      firstName: (json['firstName'] ?? json['displayName']) as String?,
       lastName: json['lastName'] as String?,
     );
   }
