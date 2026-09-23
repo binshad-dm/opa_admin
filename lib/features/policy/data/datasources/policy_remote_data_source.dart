@@ -162,6 +162,20 @@ class PolicyRemoteDataSourceImpl implements PolicyRemoteDataSource {
             .toList();
       }
     } catch (_) {}
+
+    // Fallback to local microservice projected subjects endpoint
+    try {
+      final fallbackUrl =
+          '${_getApiBaseUrl('pharmacy')}/internal/authz/subjects?type=ROLE';
+      final response = await dio.get(fallbackUrl);
+      if (response.statusCode == 200 && response.data != null) {
+        final List<dynamic> list = response.data is List ? response.data : [];
+        return list
+            .map((e) => RoleDtoModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (_) {}
+
     return [];
   }
 
@@ -182,6 +196,20 @@ class PolicyRemoteDataSourceImpl implements PolicyRemoteDataSource {
             .toList();
       }
     } catch (_) {}
+
+    // Fallback to local microservice projected subjects endpoint
+    try {
+      final fallbackUrl =
+          '${_getApiBaseUrl('pharmacy')}/internal/authz/subjects?type=USER';
+      final response = await dio.get(fallbackUrl);
+      if (response.statusCode == 200 && response.data != null) {
+        final List<dynamic> list = response.data is List ? response.data : [];
+        return list
+            .map((e) => UserDtoModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (_) {}
+
     return [];
   }
 

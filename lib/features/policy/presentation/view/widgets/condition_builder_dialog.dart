@@ -69,14 +69,19 @@ class ConditionBuilderDialog extends StatelessWidget {
         builder: (context, state) {
           final cubit = context.read<ConditionBuilderCubit>();
 
+          final screenSize = MediaQuery.sizeOf(context);
+          final dialogWidth = (screenSize.width * 0.95).clamp(400.0, 1200.0);
+          final dialogHeight = (screenSize.height * 0.90).clamp(450.0, 850.0);
+          final isNarrow = dialogWidth < 800;
+
           return Dialog(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             child: Container(
-              width: 1100,
-              height: 700,
+              width: dialogWidth,
+              height: dialogHeight,
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -84,15 +89,19 @@ class ConditionBuilderDialog extends StatelessWidget {
                   // Modal Header
                   Row(
                     children: [
-                      Text(
-                        'Condition Builder: $permissionCode',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Text(
+                          'Condition Builder: $permissionCode',
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 24),
+                      const SizedBox(width: 16),
                       Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Checkbox(
                             value: state.useCustomRego,
@@ -106,7 +115,7 @@ class ConditionBuilderDialog extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const Spacer(),
+                      const SizedBox(width: 8),
                       IconButton(
                         icon: const Icon(Icons.close),
                         onPressed: () => Navigator.of(context).pop(),
@@ -124,12 +133,15 @@ class ConditionBuilderDialog extends StatelessWidget {
                             snippet: state.customRegoSnippet,
                             onChanged: cubit.setCustomRegoSnippet,
                           )
-                        : Row(
+                        : Flex(
+                            direction: isNarrow
+                                ? Axis.vertical
+                                : Axis.horizontal,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               // Left Column: Group Tree Builder
                               Expanded(
-                                flex: 6,
+                                flex: isNarrow ? 6 : 6,
                                 child: SingleChildScrollView(
                                   child: ConditionGroupWidget(
                                     node: state.expressionTree,
@@ -140,7 +152,10 @@ class ConditionBuilderDialog extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 16),
+                              SizedBox(
+                                width: isNarrow ? 0 : 16,
+                                height: isNarrow ? 16 : 0,
+                              ),
 
                               // Right Column: Preview
                               Builder(

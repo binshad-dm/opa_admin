@@ -9,8 +9,8 @@ class RoleDtoModel extends RoleDtoEntity {
 
   factory RoleDtoModel.fromJson(Map<String, dynamic> json) {
     return RoleDtoModel(
-      id: (json['id'] ?? json['name']).toString(),
-      name: json['name'] as String? ?? '',
+      id: (json['id'] ?? json['subjectId'] ?? json['name'] ?? '').toString(),
+      name: (json['name'] ?? json['subjectName'] ?? json['displayName'] ?? '').toString(),
       description: json['description'] as String?,
     );
   }

@@ -106,8 +106,14 @@ class ConditionBuilderCubit extends Cubit<ConditionBuilderState> {
         ),
       );
 
+      final vType = current.valueType;
       String valStr = '';
-      if (current.value is List) {
+
+      if (vType == 'FIELD') {
+        valStr = '${current.value ?? ''} (Field)';
+      } else if (vType == 'FIELD_LIST') {
+        valStr = '${current.value ?? ''} (Field List)';
+      } else if (current.value is List) {
         final list = (current.value as List)
             .where((v) => v.toString().isNotEmpty)
             .map((v) => '"$v"')

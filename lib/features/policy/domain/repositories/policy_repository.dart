@@ -1,7 +1,6 @@
 import 'package:dartz/dartz.dart';
 
 import '../../../../core/error/failure.dart';
-import '../entities/dynamic_option_entity.dart';
 import '../entities/field_definition_entity.dart';
 import '../entities/policy_entity.dart';
 import '../entities/role_dto_entity.dart';

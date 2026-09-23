@@ -19,6 +19,7 @@ abstract class ConditionNodeEntity extends Equatable {
         field: json['field'] as String? ?? '',
         comparison: json['comparison'] as String? ?? '==',
         value: json['value'],
+        valueType: json['valueType'] as String? ?? 'VALUE',
       );
     }
   }
@@ -28,22 +29,26 @@ class ConditionRuleEntity extends ConditionNodeEntity {
   final String field;
   final String comparison;
   final dynamic value;
+  final String valueType; // VALUE, FIELD, FIELD_LIST
 
   const ConditionRuleEntity({
     required this.field,
     this.comparison = '==',
     this.value,
+    this.valueType = 'VALUE',
   });
 
   ConditionRuleEntity copyWith({
     String? field,
     String? comparison,
     dynamic value,
+    String? valueType,
   }) {
     return ConditionRuleEntity(
       field: field ?? this.field,
       comparison: comparison ?? this.comparison,
       value: value ?? this.value,
+      valueType: valueType ?? this.valueType,
     );
   }
 
@@ -53,11 +58,12 @@ class ConditionRuleEntity extends ConditionNodeEntity {
       'field': field,
       'comparison': comparison,
       'value': value,
+      'valueType': valueType,
     };
   }
 
   @override
-  List<Object?> get props => [field, comparison, value];
+  List<Object?> get props => [field, comparison, value, valueType];
 }
 
 class ConditionGroupEntity extends ConditionNodeEntity {
