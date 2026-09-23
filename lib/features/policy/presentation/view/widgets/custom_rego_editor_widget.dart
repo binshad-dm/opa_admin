@@ -14,73 +14,65 @@ class CustomRegoEditorWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      container: true,
-      label: 'Custom Rego editor',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Semantics(
-            label:
-                'Write custom Rego code. You do not need to specify package or allow_rule/deny_rule headers. Just provide helper rules if needed, or directly write logic.',
-            child: const Text(
-              "Write custom Rego code. You do not need to specify `package` or `allow_rule` / `deny_rule` headers. Just provide helper rules if needed, or directly write logic.",
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "Write custom Rego code. You do not need to specify `package` or `allow_rule` / `deny_rule` headers. Just provide helper rules if needed, or directly write logic.",
+          style: TextStyle(fontSize: 12, color: Colors.grey),
+        ),
+        const SizedBox(height: 12),
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E1E1E),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade700),
             ),
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade700),
-              ),
-              padding: const EdgeInsets.all(4),
-              child: Scrollbar(
-                thumbVisibility: true,
-                child: SingleChildScrollView(
-                  child: Semantics(
-                    identifier: 'custom_rego_editor_field',
-                    label: 'Custom Rego code editor',
-                    hint: 'Write custom Rego code snippet',
-                    textField: true,
-                    child: AppTextFormField(
-                      initialValue: snippet,
-                      maxLines: null,
-                      keyboardType: TextInputType.multiline,
+            padding: const EdgeInsets.all(4),
+            child: Scrollbar(
+              thumbVisibility: true,
+              child: SingleChildScrollView(
+                child: Semantics(
+                  identifier: 'custom_rego_editor_field',
+                  label: 'Custom Rego code editor',
+                  hint: 'Write custom Rego code snippet',
+                  textField: true,
+                  child: AppTextFormField(
+                    initialValue: snippet,
+                    maxLines: null,
+                    keyboardType: TextInputType.multiline,
+                    hintText:
+                        '# Write Rego code snippet here...\nallow {\n    input.user.role == "ADMIN"\n}',
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 13,
+                      color: Color(0xFFD4D4D4),
+                      height: 1.4,
+                    ),
+                    decoration: const InputDecoration(
                       hintText:
                           '# Write Rego code snippet here...\nallow {\n    input.user.role == "ADMIN"\n}',
-                      style: const TextStyle(
-                        fontFamily: 'monospace',
+                      hintStyle: TextStyle(
+                        color: Color(0xFF6A9955),
                         fontSize: 13,
-                        color: Color(0xFFD4D4D4),
-                        height: 1.4,
+                        fontFamily: 'monospace',
                       ),
-                      decoration: const InputDecoration(
-                        hintText:
-                            '# Write Rego code snippet here...\nallow {\n    input.user.role == "ADMIN"\n}',
-                        hintStyle: TextStyle(
-                          color: Color(0xFF6A9955),
-                          fontSize: 13,
-                          fontFamily: 'monospace',
-                        ),
-                        filled: true,
-                        fillColor: Colors.transparent,
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        contentPadding: EdgeInsets.all(8),
-                      ),
-                      onChanged: onChanged,
+                      filled: true,
+                      fillColor: Colors.transparent,
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      contentPadding: EdgeInsets.all(8),
                     ),
+                    onChanged: onChanged,
                   ),
                 ),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

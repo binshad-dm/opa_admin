@@ -118,6 +118,73 @@ class ConditionRuleWidget extends StatelessWidget {
     );
   }
 
+  Widget _buildFieldDropdown(
+    String? currentField,
+    List<DropdownMenuItem<String>> fieldItems,
+  ) {
+    return Semantics(
+      identifier: 'condition_rule_field_dropdown',
+      label: 'Rule field',
+      button: true,
+      child: AppDropdownField<String>(
+        value: currentField,
+        items: fieldItems,
+        onChanged: _handleFieldChange,
+      ),
+    );
+  }
+
+  Widget _buildComparisonDropdown(
+    List<String> compOptions,
+    List<DropdownMenuItem<String>> compDropdownItems,
+  ) {
+    return Semantics(
+      identifier: 'condition_rule_operator_dropdown',
+      label: 'Rule comparison operator',
+      button: true,
+      child: AppDropdownField<String>(
+        value: compOptions.contains(rule.comparison)
+            ? rule.comparison
+            : '==',
+        items: compDropdownItems,
+        onChanged: _handleComparisonChange,
+      ),
+    );
+  }
+
+  Widget _buildValueTypeDropdown(
+    List<DropdownMenuItem<String>> valueTypeDropdownItems,
+  ) {
+    return Semantics(
+      identifier: 'condition_rule_value_type_dropdown',
+      label: 'Rule value type',
+      button: true,
+      child: AppDropdownField<String>(
+        value: rule.valueType,
+        items: valueTypeDropdownItems,
+        onChanged: _handleValueTypeChange,
+      ),
+    );
+  }
+
+  Widget _buildRemoveButton() {
+    return Semantics(
+      identifier: 'remove_condition_rule_button',
+      label: 'Remove rule',
+      button: true,
+      tooltip: 'Remove rule',
+      child: IconButton(
+        icon: const Icon(
+          Icons.close,
+          size: 18,
+          color: Colors.redAccent,
+        ),
+        tooltip: 'Remove rule',
+        onPressed: onRemove,
+      ),
+    );
+  }
+
   Widget _buildValueInput() {
     if (rule.valueType == 'FIELD' || rule.valueType == 'FIELD_LIST') {
       final suggestions = allSuggestions;
@@ -132,59 +199,69 @@ class ConditionRuleWidget extends StatelessWidget {
           children: [
             SizedBox(
               width: 175,
-              child: AppDropdownField<String>(
-                value: dropdownVal,
-                hintText: 'Select Field...',
-                items: [
-                  ...userFieldSuggestions.map(
-                    (sf) => DropdownMenuItem<String>(
-                      value: sf,
+              child: Semantics(
+                identifier: 'condition_rule_field_suggestion_dropdown',
+                label: 'Select field path suggestion',
+                button: true,
+                child: AppDropdownField<String>(
+                  value: dropdownVal,
+                  hintText: 'Select Field...',
+                  items: [
+                    ...userFieldSuggestions.map(
+                      (sf) => DropdownMenuItem<String>(
+                        value: sf,
+                        child: Text(
+                          '$sf (User)',
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    ),
+                    ...resourceFieldSuggestions.map(
+                      (rf) => DropdownMenuItem<String>(
+                        value: rf,
+                        child: Text(
+                          '$rf (Resource)',
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    ),
+                    const DropdownMenuItem<String>(
+                      value: '__custom__',
                       child: Text(
-                        '$sf (User)',
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 12),
+                        'Custom path...',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
                     ),
-                  ),
-                  ...resourceFieldSuggestions.map(
-                    (rf) => DropdownMenuItem<String>(
-                      value: rf,
-                      child: Text(
-                        '$rf (Resource)',
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ),
-                  ),
-                  const DropdownMenuItem<String>(
-                    value: '__custom__',
-                    child: Text(
-                      'Custom path...',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ),
-                ],
-                onChanged: (val) {
-                  if (val != null && val != '__custom__') {
-                    onChange(rule.copyWith(value: val));
-                  }
-                },
+                  ],
+                  onChanged: (val) {
+                    if (val != null && val != '__custom__') {
+                      onChange(rule.copyWith(value: val));
+                    }
+                  },
+                ),
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: AppTextFormField(
-                key: ValueKey(
-                  'field_path_${rule.field}_${rule.valueType}_${rule.value}',
+              child: Semantics(
+                identifier: 'condition_rule_field_path_text_field',
+                label: 'Field path',
+                textField: true,
+                child: AppTextFormField(
+                  key: ValueKey(
+                    'field_path_${rule.field}_${rule.valueType}_${rule.value}',
+                  ),
+                  hintText: rule.valueType == 'FIELD'
+                      ? 'e.g. user.location'
+                      : 'e.g. resource.allowedDepartments',
+                  initialValue: currentStr,
+                  onChanged: (val) => onChange(rule.copyWith(value: val)),
                 ),
-                hintText: rule.valueType == 'FIELD'
-                    ? 'e.g. user.location'
-                    : 'e.g. resource.allowedDepartments',
-                initialValue: currentStr,
-                onChanged: (val) => onChange(rule.copyWith(value: val)),
               ),
             ),
           ],
@@ -199,14 +276,19 @@ class ConditionRuleWidget extends StatelessWidget {
           ? (rule.value as List).join(', ')
           : (rule.value?.toString() ?? '');
       return Expanded(
-        child: AppTextFormField(
-          key: ValueKey('array_${rule.field}_${rule.value}'),
-          hintText: 'value1, value2...',
-          initialValue: displayValue,
-          onChanged: (val) {
-            final arr = val.split(',').map((s) => s.trimLeft()).toList();
-            onChange(rule.copyWith(value: arr));
-          },
+        child: Semantics(
+          identifier: 'condition_rule_array_value_text_field',
+          label: 'Comma-separated values',
+          textField: true,
+          child: AppTextFormField(
+            key: ValueKey('array_${rule.field}_${rule.value}'),
+            hintText: 'value1, value2...',
+            initialValue: displayValue,
+            onChanged: (val) {
+              final arr = val.split(',').map((s) => s.trimLeft()).toList();
+              onChange(rule.copyWith(value: arr));
+            },
+          ),
         ),
       );
     }
@@ -214,11 +296,16 @@ class ConditionRuleWidget extends StatelessWidget {
     final field = selectedField;
     if (field == null) {
       return Expanded(
-        child: AppTextFormField(
-          key: ValueKey('val_${rule.field}_${rule.value}'),
-          hintText: 'Value...',
-          initialValue: rule.value?.toString() ?? '',
-          onChanged: (val) => onChange(rule.copyWith(value: val)),
+        child: Semantics(
+          identifier: 'condition_rule_value_text_field',
+          label: 'Rule value',
+          textField: true,
+          child: AppTextFormField(
+            key: ValueKey('val_${rule.field}_${rule.value}'),
+            hintText: 'Value...',
+            initialValue: rule.value?.toString() ?? '',
+            onChanged: (val) => onChange(rule.copyWith(value: val)),
+          ),
         ),
       );
     }
@@ -246,11 +333,16 @@ class ConditionRuleWidget extends StatelessWidget {
           : null;
 
       return Expanded(
-        child: AppDropdownField<String>(
-          value: currentVal,
-          hintText: 'Select value...',
-          items: items,
-          onChanged: (val) => onChange(rule.copyWith(value: val)),
+        child: Semantics(
+          identifier: 'condition_rule_allowed_values_dropdown',
+          label: 'Select value for ${field.displayName}',
+          button: true,
+          child: AppDropdownField<String>(
+            value: currentVal,
+            hintText: 'Select value...',
+            items: items,
+            onChanged: (val) => onChange(rule.copyWith(value: val)),
+          ),
         ),
       );
     }
@@ -262,20 +354,26 @@ class ConditionRuleWidget extends StatelessWidget {
           alignment: Alignment.centerLeft,
           child: SizedBox(
             width: 140,
-            child: AppDropdownField<String>(
-              value: (valStr == 'true' || valStr == 'false') ? valStr : null,
-              hintText: 'Select...',
-              items: const [
-                DropdownMenuItem(
-                  value: 'true',
-                  child: Text('True', style: TextStyle(fontSize: 13)),
-                ),
-                DropdownMenuItem(
-                  value: 'false',
-                  child: Text('False', style: TextStyle(fontSize: 13)),
-                ),
-              ],
-              onChanged: (val) => onChange(rule.copyWith(value: val == 'true')),
+            child: Semantics(
+              identifier: 'condition_rule_boolean_dropdown',
+              label: 'Select boolean value for ${field.displayName}',
+              button: true,
+              child: AppDropdownField<String>(
+                value: (valStr == 'true' || valStr == 'false') ? valStr : null,
+                hintText: 'Select...',
+                items: const [
+                  DropdownMenuItem(
+                    value: 'true',
+                    child: Text('True', style: TextStyle(fontSize: 13)),
+                  ),
+                  DropdownMenuItem(
+                    value: 'false',
+                    child: Text('False', style: TextStyle(fontSize: 13)),
+                  ),
+                ],
+                onChanged: (val) =>
+                    onChange(rule.copyWith(value: val == 'true')),
+              ),
             ),
           ),
         ),
@@ -284,23 +382,33 @@ class ConditionRuleWidget extends StatelessWidget {
 
     if (field.fieldType == 'NUMBER') {
       return Expanded(
-        child: AppTextFormField(
-          key: ValueKey('num_${rule.field}_${rule.value}'),
-          keyboardType: TextInputType.number,
-          hintText: 'Value...',
-          initialValue: rule.value?.toString() ?? '',
-          onChanged: (val) =>
-              onChange(rule.copyWith(value: num.tryParse(val) ?? val)),
+        child: Semantics(
+          identifier: 'condition_rule_number_text_field',
+          label: 'Numeric value for ${field.displayName}',
+          textField: true,
+          child: AppTextFormField(
+            key: ValueKey('num_${rule.field}_${rule.value}'),
+            keyboardType: TextInputType.number,
+            hintText: 'Value...',
+            initialValue: rule.value?.toString() ?? '',
+            onChanged: (val) =>
+                onChange(rule.copyWith(value: num.tryParse(val) ?? val)),
+          ),
         ),
       );
     }
 
     return Expanded(
-      child: AppTextFormField(
-        key: ValueKey('text_${rule.field}_${rule.value}'),
-        hintText: 'Value...',
-        initialValue: rule.value?.toString() ?? '',
-        onChanged: (val) => onChange(rule.copyWith(value: val)),
+      child: Semantics(
+        identifier: 'condition_rule_value_fallback_text_field',
+        label: 'Value for ${field.displayName}',
+        textField: true,
+        child: AppTextFormField(
+          key: ValueKey('text_${rule.field}_${rule.value}'),
+          hintText: 'Value...',
+          initialValue: rule.value?.toString() ?? '',
+          onChanged: (val) => onChange(rule.copyWith(value: val)),
+        ),
       ),
     );
   }
@@ -386,42 +494,23 @@ class ConditionRuleWidget extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: AppDropdownField<String>(
-                          value: currentField,
-                          items: fieldItems,
-                          onChanged: _handleFieldChange,
-                        ),
+                        child: _buildFieldDropdown(currentField, fieldItems),
                       ),
                       const SizedBox(width: 8),
                       SizedBox(
                         width: 95,
-                        child: AppDropdownField<String>(
-                          value: compOptions.contains(rule.comparison)
-                              ? rule.comparison
-                              : '==',
-                          items: compDropdownItems,
-                          onChanged: _handleComparisonChange,
+                        child: _buildComparisonDropdown(
+                          compOptions,
+                          compDropdownItems,
                         ),
                       ),
                       const SizedBox(width: 8),
                       SizedBox(
                         width: 130,
-                        child: AppDropdownField<String>(
-                          value: rule.valueType,
-                          items: valueTypeDropdownItems,
-                          onChanged: _handleValueTypeChange,
-                        ),
+                        child: _buildValueTypeDropdown(valueTypeDropdownItems),
                       ),
                       const SizedBox(width: 4),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.close,
-                          size: 18,
-                          color: Colors.redAccent,
-                        ),
-                        tooltip: 'Remove rule',
-                        onPressed: onRemove,
-                      ),
+                      _buildRemoveButton(),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -443,44 +532,25 @@ class ConditionRuleWidget extends StatelessWidget {
             children: [
               SizedBox(
                 width: 160,
-                child: AppDropdownField<String>(
-                  value: currentField,
-                  items: fieldItems,
-                  onChanged: _handleFieldChange,
-                ),
+                child: _buildFieldDropdown(currentField, fieldItems),
               ),
               const SizedBox(width: 8),
               SizedBox(
                 width: 95,
-                child: AppDropdownField<String>(
-                  value: compOptions.contains(rule.comparison)
-                      ? rule.comparison
-                      : '==',
-                  items: compDropdownItems,
-                  onChanged: _handleComparisonChange,
+                child: _buildComparisonDropdown(
+                  compOptions,
+                  compDropdownItems,
                 ),
               ),
               const SizedBox(width: 8),
               SizedBox(
                 width: 135,
-                child: AppDropdownField<String>(
-                  value: rule.valueType,
-                  items: valueTypeDropdownItems,
-                  onChanged: _handleValueTypeChange,
-                ),
+                child: _buildValueTypeDropdown(valueTypeDropdownItems),
               ),
               const SizedBox(width: 8),
               _buildValueInput(),
               const SizedBox(width: 4),
-              IconButton(
-                icon: const Icon(
-                  Icons.close,
-                  size: 18,
-                  color: Colors.redAccent,
-                ),
-                tooltip: 'Remove rule',
-                onPressed: onRemove,
-              ),
+              _buildRemoveButton(),
             ],
           ),
         );

@@ -79,42 +79,36 @@ class _PolicyDashboardContent extends StatelessWidget {
 
           if (state is PolicyLoading) {
             return Center(
-              child: Semantics(
-                label: state.message ?? 'Loading policy dashboard',
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const CircularProgressIndicator(),
-                    const SizedBox(height: 16),
-                    Text(state.message ?? 'Loading...'),
-                  ],
-                ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text(state.message ?? 'Loading...'),
+                ],
               ),
             );
           }
 
           if (state is PolicyError) {
             return Center(
-              child: Semantics(
-                label: 'Error: ${state.message}',
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                    const SizedBox(height: 12),
-                    Text(state.message),
-                    const SizedBox(height: 16),
-                    Semantics(
-                      identifier: 'retry_button',
-                      button: true,
-                      label: 'Retry loading dashboard',
-                      child: AppButton(
-                        text: 'Retry',
-                        onPressed: () => cubit.initDashboard(),
-                      ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 12),
+                  Text(state.message),
+                  const SizedBox(height: 16),
+                  Semantics(
+                    identifier: 'retry_button',
+                    button: true,
+                    label: 'Retry loading dashboard',
+                    child: AppButton(
+                      text: 'Retry',
+                      onPressed: () => cubit.initDashboard(),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             );
           }
@@ -138,30 +132,22 @@ class _PolicyDashboardContent extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Semantics(
-                                  header: true,
-                                  label: pageTitle,
-                                  child: Text(
-                                    pageTitle,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .headlineSmall
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          color: const Color(0xFF0F4C81),
-                                        ),
-                                  ),
+                                Text(
+                                  pageTitle,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineSmall
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFF0F4C81),
+                                      ),
                                 ),
                                 const SizedBox(height: 4),
-                                Semantics(
-                                  label:
-                                      'Manage Open Policy Agent permissions, conditions, and custom Rego expressions.',
-                                  child: const Text(
-                                    'Manage Open Policy Agent permissions, conditions, and custom Rego expressions.',
-                                    style: TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 13,
-                                    ),
+                                const Text(
+                                  'Manage Open Policy Agent permissions, conditions, and custom Rego expressions.',
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 13,
                                   ),
                                 ),
                               ],
@@ -176,7 +162,9 @@ class _PolicyDashboardContent extends StatelessWidget {
                                 : 'Save Changes',
                             hint: 'Save all policy changes',
                             child: AppButton(
-                              text: state.isSaving ? 'Saving...' : 'Save Changes',
+                              text: state.isSaving
+                                  ? 'Saving...'
+                                  : 'Save Changes',
                               icon: state.isSaving
                                   ? const SizedBox(
                                       width: 16,
@@ -276,7 +264,8 @@ class _PolicyDashboardContent extends StatelessWidget {
                       Expanded(
                         child: Semantics(
                           container: true,
-                          label: 'Policy list for module ${state.selectedModule}',
+                          label:
+                              'Policy list for module ${state.selectedModule}',
                           child: PolicyGridWidget(
                             policies: state.policies,
                             onTogglePolicy: cubit.togglePolicy,

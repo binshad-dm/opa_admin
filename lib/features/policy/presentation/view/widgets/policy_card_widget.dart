@@ -21,98 +21,79 @@ class PolicyCardWidget extends StatelessWidget {
         (policy.expressionJson != null && policy.expressionJson!.isNotEmpty) ||
         (policy.useCustomRego && policy.customRegoSnippet!.isNotEmpty);
 
-    return Semantics(
-      container: true,
-      label:
-          'Policy item for ${policy.permissionCode}, action ${policy.action}, status ${policy.enabled ? "enabled" : "disabled"}${hasConditions ? ", has conditions configured" : ""}',
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: Theme.of(context).dividerColor.withOpacity(0.1),
-          ),
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withOpacity(0.1),
         ),
-        child: Row(
-          children: [
-            Semantics(
-              identifier: 'policy_switch_${policy.permissionCode}',
-              label: 'Toggle policy for ${policy.action}',
-              hint:
-                  'Double tap to ${policy.enabled ? "disable" : "enable"} this policy',
-              toggled: policy.enabled,
-              child: AppToggleSwitch(
-                value: policy.enabled,
-                onChanged: (_) => onToggle(policy.permissionCode),
+      ),
+      child: Row(
+        children: [
+          Semantics(
+            identifier: 'policy_switch_${policy.permissionCode}',
+            label: 'Toggle policy for ${policy.action}',
+            hint:
+                'Double tap to ${policy.enabled ? "disable" : "enable"} this policy',
+            toggled: policy.enabled,
+            child: AppToggleSwitch(
+              value: policy.enabled,
+              onChanged: (_) => onToggle(policy.permissionCode),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            policy.action.toUpperCase(),
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+          ),
+          const SizedBox(width: 12),
+          if (hasConditions)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                'Has Conditions',
+                style: TextStyle(
+                  color: Colors.blue,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-            const SizedBox(width: 12),
-            Semantics(
-              label: 'Action: ${policy.action}',
+          if (policy.disabledReason != null &&
+              policy.disabledReason!.isNotEmpty) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Text(
-                policy.action.toUpperCase(),
-                style:
-                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-              ),
-            ),
-            const SizedBox(width: 12),
-            if (hasConditions)
-              Semantics(
-                label: 'Conditions are configured for this policy',
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    'Has Conditions',
-                    style: TextStyle(
-                      color: Colors.blue,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            if (policy.disabledReason != null &&
-                policy.disabledReason!.isNotEmpty) ...[
-              const SizedBox(width: 8),
-              Semantics(
-                label: 'Disabled reason: ${policy.disabledReason}',
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '⚠️ ${policy.disabledReason}',
-                    style:
-                        const TextStyle(color: Colors.redAccent, fontSize: 11),
-                  ),
-                ),
-              ),
-            ],
-            const Spacer(),
-            Semantics(
-              identifier:
-                  'configure_conditions_button_${policy.permissionCode}',
-              label: 'Configure conditions for ${policy.action}',
-              button: true,
-              tooltip: 'Configure Conditions',
-              child: IconButton(
-                icon: const Icon(Icons.settings_outlined, size: 20),
-                tooltip: 'Configure Conditions',
-                onPressed: () => onEditConditions(policy.permissionCode),
+                '⚠️ ${policy.disabledReason}',
+                style: const TextStyle(color: Colors.redAccent, fontSize: 11),
               ),
             ),
           ],
-        ),
+          const Spacer(),
+          Semantics(
+            identifier: 'configure_conditions_button_${policy.permissionCode}',
+            label: 'Configure conditions for ${policy.action}',
+            button: true,
+            tooltip: 'Configure Conditions',
+            child: IconButton(
+              icon: const Icon(Icons.settings_outlined, size: 20),
+              tooltip: 'Configure Conditions',
+              onPressed: () => onEditConditions(policy.permissionCode),
+            ),
+          ),
+        ],
       ),
     );
   }

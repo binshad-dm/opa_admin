@@ -103,11 +103,16 @@ class ConditionBuilderDialog extends StatelessWidget {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Checkbox(
-                            value: state.useCustomRego,
-                            onChanged: (val) {
-                              cubit.setUseCustomRego(val ?? false);
-                            },
+                          Semantics(
+                            identifier: 'use_custom_rego_checkbox',
+                            label: 'Use Custom Rego',
+                            checked: state.useCustomRego,
+                            child: Checkbox(
+                              value: state.useCustomRego,
+                              onChanged: (val) {
+                                cubit.setUseCustomRego(val ?? false);
+                              },
+                            ),
                           ),
                           const Text(
                             'Use Custom Rego',
@@ -116,9 +121,16 @@ class ConditionBuilderDialog extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(width: 8),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.of(context).pop(),
+                      Semantics(
+                        identifier: 'close_condition_builder_dialog_button',
+                        label: 'Close dialog',
+                        button: true,
+                        tooltip: 'Close dialog',
+                        child: IconButton(
+                          icon: const Icon(Icons.close),
+                          tooltip: 'Close dialog',
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
                       ),
                     ],
                   ),
@@ -274,42 +286,53 @@ class ConditionBuilderDialog extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      AppOutlinedButton(
-                        text: 'Cancel',
-                        onPressed: () => Navigator.of(context).pop(),
+                      Semantics(
+                        identifier: 'cancel_condition_builder_button',
+                        label: 'Cancel',
+                        button: true,
+                        child: AppOutlinedButton(
+                          text: 'Cancel',
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
                       ),
                       const SizedBox(width: 12),
-                      AppButton(
-                        text: 'Apply',
+                      Semantics(
+                        identifier: 'apply_condition_builder_button',
+                        label: 'Apply conditions',
+                        button: true,
                         enabled: cubit.isValid,
-                        onPressed: () {
-                          if (!cubit.isValid) {
-                            showCustomSnackBar(
-                              context: context,
-                              message: state.useCustomRego
-                                  ? 'Cannot apply: Custom Rego snippet is empty.'
-                                  : 'Cannot apply: Empty group present in preview section.',
-                              type: SnackBarType.alert,
-                            );
-                            return;
-                          }
+                        child: AppButton(
+                          text: 'Apply',
+                          enabled: cubit.isValid,
+                          onPressed: () {
+                            if (!cubit.isValid) {
+                              showCustomSnackBar(
+                                context: context,
+                                message: state.useCustomRego
+                                    ? 'Cannot apply: Custom Rego snippet is empty.'
+                                    : 'Cannot apply: Empty group present in preview section.',
+                                type: SnackBarType.alert,
+                              );
+                              return;
+                            }
 
-                          if (state.useCustomRego) {
-                            onApply(
-                              permissionCode,
-                              null,
-                              true,
-                              state.customRegoSnippet,
-                            );
-                          } else {
-                            final treeJson =
-                                state.expressionTree.children.isEmpty
-                                ? null
-                                : state.expressionTree.toJson();
-                            onApply(permissionCode, treeJson, false, '');
-                          }
-                          Navigator.of(context).pop();
-                        },
+                            if (state.useCustomRego) {
+                              onApply(
+                                permissionCode,
+                                null,
+                                true,
+                                state.customRegoSnippet,
+                              );
+                            } else {
+                              final treeJson =
+                                  state.expressionTree.children.isEmpty
+                                  ? null
+                                  : state.expressionTree.toJson();
+                              onApply(permissionCode, treeJson, false, '');
+                            }
+                            Navigator.of(context).pop();
+                          },
+                        ),
                       ),
                     ],
                   ),
