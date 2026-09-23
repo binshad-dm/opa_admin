@@ -7,7 +7,6 @@ import '../core/l10n/app_localizations.dart';
 import '../core/l10n/locale_cubit.dart';
 import 'navigation/app_pages.dart';
 
-
 class AppRoot extends StatelessWidget {
   final String initialRoute;
 
@@ -20,7 +19,7 @@ class AppRoot extends StatelessWidget {
         return GetMaterialApp(
           key: ValueKey(locale.languageCode),
           debugShowCheckedModeBanner: false,
-          title: AppLocalizations.of(context)?.appTitle ?? 'Datamate Dental',
+          title: AppLocalizations.of(context)?.appTitle ?? 'OPA Admin',
           locale: locale,
           localizationsDelegates: const [
             AppLocalizations.delegate,
@@ -36,7 +35,6 @@ class AppRoot extends StatelessWidget {
           initialRoute: initialRoute,
           getPages: AppPages.routes,
           unknownRoute: GetPage(
-
             name: '/notfound',
             page: () => const Scaffold(body: Center(child: Text('404'))),
           ),
