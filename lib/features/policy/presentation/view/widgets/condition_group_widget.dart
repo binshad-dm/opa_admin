@@ -92,67 +92,106 @@ class ConditionGroupWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Text(
-                'Match',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-              ),
-              const SizedBox(width: 12),
-              SizedBox(
-                width: 140,
-                child: Semantics(
-                  identifier: 'condition_group_operator_dropdown',
-                  label: 'Match operator: ALL (AND), ANY (OR), or NONE (NOT)',
-                  button: true,
-                  child: AppDropdownField<String>(
-                    value: node.operator,
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'AND',
-                        child: Text(
-                          'ALL (AND)',
-                          style: TextStyle(fontSize: 12),
-                        ),
-                      ),
-                      DropdownMenuItem(
-                        value: 'OR',
-                        child: Text('ANY (OR)', style: TextStyle(fontSize: 12)),
-                      ),
-                      DropdownMenuItem(
-                        value: 'NOT',
-                        child: Text(
-                          'NONE (NOT)',
-                          style: TextStyle(fontSize: 12),
-                        ),
-                      ),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) onChange(node.copyWith(operator: val));
-                    },
+          LayoutBuilder(
+            builder: (context, groupConstraints) {
+              final isTight = groupConstraints.maxWidth < 400;
+
+              final operatorSection = Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Match',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                   ),
-                ),
-              ),
-              const Spacer(),
-              if (!isRoot && onRemove != null)
-                Semantics(
-                  identifier: 'remove_condition_group_button',
-                  button: true,
-                  label: 'Remove condition group',
-                  child: TextButton.icon(
-                    onPressed: onRemove,
-                    icon: const Icon(
-                      Icons.delete_outline,
-                      size: 16,
-                      color: Colors.redAccent,
-                    ),
-                    label: const Text(
-                      'Remove Group',
-                      style: TextStyle(color: Colors.redAccent, fontSize: 12),
+                  const SizedBox(width: 12),
+                  SizedBox(
+                    width: 135,
+                    child: Semantics(
+                      identifier: 'condition_group_operator_dropdown',
+                      label: 'Match operator: ALL (AND), ANY (OR), or NONE (NOT)',
+                      button: true,
+                      child: AppDropdownField<String>(
+                        value: node.operator,
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'AND',
+                            child: Text(
+                              'ALL (AND)',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                          ),
+                          DropdownMenuItem(
+                            value: 'OR',
+                            child: Text('ANY (OR)', style: TextStyle(fontSize: 12)),
+                          ),
+                          DropdownMenuItem(
+                            value: 'NOT',
+                            child: Text(
+                              'NONE (NOT)',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) onChange(node.copyWith(operator: val));
+                        },
+                      ),
                     ),
                   ),
-                ),
-            ],
+                ],
+              );
+
+              final removeButton = (!isRoot && onRemove != null)
+                  ? Semantics(
+                      identifier: 'remove_condition_group_button',
+                      button: true,
+                      label: 'Remove condition group',
+                      child: isTight
+                          ? IconButton(
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                size: 18,
+                                color: Colors.redAccent,
+                              ),
+                              tooltip: 'Remove Group',
+                              onPressed: onRemove,
+                            )
+                          : TextButton.icon(
+                              onPressed: onRemove,
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                size: 16,
+                                color: Colors.redAccent,
+                              ),
+                              label: const Text(
+                                'Remove Group',
+                                style: TextStyle(
+                                  color: Colors.redAccent,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                    )
+                  : null;
+
+              if (isTight && removeButton != null) {
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    operatorSection,
+                    removeButton,
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  operatorSection,
+                  const Spacer(),
+                  ?removeButton,
+                ],
+              );
+            },
           ),
           if (node.operator == 'NOT' && node.children.length > 1) ...[
             const SizedBox(height: 6),

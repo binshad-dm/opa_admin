@@ -184,6 +184,101 @@ void main() {
       expect(preview, contains('User Department in resource.allowedDepartments (Field List)'));
       expect(preview, contains('AND'));
     });
+
+    test('validationError detects empty group', () {
+      final cubit = ConditionBuilderCubit(
+        getFieldsUseCase: MockGetFieldsUseCase(const []),
+      );
+
+      cubit.emit(cubit.state.copyWith(
+        expressionTree: const ConditionGroupEntity(operator: 'AND', children: []),
+      ));
+
+      expect(cubit.validationError, contains('Empty group detected'));
+      expect(cubit.isValid, isFalse);
+    });
+
+    test('validationError detects invalid field path and validates correct rules', () {
+      final fields = [
+        const FieldDefinitionEntity(
+          fieldName: 'assignedLocation',
+          displayName: 'Assigned Location',
+          fieldType: 'STRING',
+        ),
+      ];
+
+      final cubit = ConditionBuilderCubit(
+        getFieldsUseCase: MockGetFieldsUseCase(fields),
+      );
+
+      // Invalid field path with double dot
+      cubit.emit(cubit.state.copyWith(
+        fields: fields,
+        expressionTree: const ConditionGroupEntity(
+          operator: 'AND',
+          children: [
+            ConditionRuleEntity(
+              field: 'assignedLocation',
+              comparison: '==',
+              value: 'user..location',
+              valueType: 'FIELD',
+            ),
+          ],
+        ),
+      ));
+
+      expect(cubit.validationError, contains('Enter a valid field path'));
+      expect(cubit.isValid, isFalse);
+
+      // Valid field path
+      cubit.emit(cubit.state.copyWith(
+        fields: fields,
+        expressionTree: const ConditionGroupEntity(
+          operator: 'AND',
+          children: [
+            ConditionRuleEntity(
+              field: 'assignedLocation',
+              comparison: '==',
+              value: 'user.location',
+              valueType: 'FIELD',
+            ),
+          ],
+        ),
+      ));
+
+      expect(cubit.validationError, isNull);
+      expect(cubit.isValid, isTrue);
+    });
+
+    test('validationError validates custom rego snippets', () {
+      final cubit = ConditionBuilderCubit(
+        getFieldsUseCase: MockGetFieldsUseCase(const []),
+      );
+
+      // Empty custom rego
+      cubit.emit(cubit.state.copyWith(
+        useCustomRego: true,
+        customRegoSnippet: '   ',
+      ));
+      expect(cubit.validationError, contains('Rego code snippet is required'));
+      expect(cubit.isValid, isFalse);
+
+      // Rego with unclosed bracket
+      cubit.emit(cubit.state.copyWith(
+        useCustomRego: true,
+        customRegoSnippet: 'allow {\n  input.user.role == "ADMIN"',
+      ));
+      expect(cubit.validationError, contains('Unclosed bracket "{"'));
+      expect(cubit.isValid, isFalse);
+
+      // Valid rego
+      cubit.emit(cubit.state.copyWith(
+        useCustomRego: true,
+        customRegoSnippet: 'allow {\n  input.user.role == "ADMIN"\n}',
+      ));
+      expect(cubit.validationError, isNull);
+      expect(cubit.isValid, isTrue);
+    });
   });
 
   group('Subject Model Fallback Tests', () {

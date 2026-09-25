@@ -32,6 +32,7 @@ class PolicyCardWidget extends StatelessWidget {
         ),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Semantics(
             identifier: 'policy_switch_${policy.permissionCode}',
@@ -45,43 +46,62 @@ class PolicyCardWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          Text(
-            policy.action.toUpperCase(),
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-          ),
-          const SizedBox(width: 12),
-          if (hasConditions)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Text(
-                'Has Conditions',
-                style: TextStyle(
-                  color: Colors.blue,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
+          Expanded(
+            child: Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                Text(
+                  policy.action.toUpperCase(),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
                 ),
-              ),
+                if (hasConditions)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      'Has Conditions',
+                      style: TextStyle(
+                        color: Colors.blue,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                if (policy.disabledReason != null &&
+                    policy.disabledReason!.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '⚠️ ${policy.disabledReason}',
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.redAccent,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+              ],
             ),
-          if (policy.disabledReason != null &&
-              policy.disabledReason!.isNotEmpty) ...[
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                '⚠️ ${policy.disabledReason}',
-                style: const TextStyle(color: Colors.redAccent, fontSize: 11),
-              ),
-            ),
-          ],
-          const Spacer(),
+          ),
+          const SizedBox(width: 8),
           Semantics(
             identifier: 'configure_conditions_button_${policy.permissionCode}',
             label: 'Configure conditions for ${policy.action}',

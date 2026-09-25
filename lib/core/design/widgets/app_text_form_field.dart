@@ -24,6 +24,7 @@ class AppTextFormField extends StatelessWidget {
     this.prefix,
     this.suffix,
     this.validator,
+    this.autovalidateMode,
     this.maxLength,
     this.onTapOutside,
     this.textAlign = TextAlign.start,
@@ -48,6 +49,7 @@ class AppTextFormField extends StatelessWidget {
   final Widget? prefix;
   final Widget? suffix;
   final FormFieldValidator<String>? validator;
+  final AutovalidateMode? autovalidateMode;
   final int? maxLength;
   final TapRegionCallback? onTapOutside;
   final TextAlign textAlign;
@@ -93,6 +95,7 @@ class AppTextFormField extends StatelessWidget {
           maxLength: maxLength,
           maxLines: maxLines,
           validator: validator,
+          autovalidateMode: autovalidateMode,
           style: style ?? const TextStyle(fontSize: 13),
           decoration: decoration ??
               _defaultDecoration(hintText, prefix, suffix, readOnly),
@@ -125,5 +128,14 @@ class AppTextFormField extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: _primary, width: 2),
         ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red, width: 2),
+        ),
+        errorStyle: const TextStyle(fontSize: 11, color: Colors.redAccent),
       );
 }

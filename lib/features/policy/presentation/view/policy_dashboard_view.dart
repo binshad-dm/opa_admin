@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/design/responsive/responsive_builder.dart';
 import '../../../../core/design/widgets/app_button.dart';
+import '../../../../core/design/widgets/app_dropdown_field.dart';
 import '../../../../core/l10n/app_localizations.dart';
+import '../../../../core/l10n/locale_cubit.dart';
 import '../../../../core/service_locator.dart';
 import '../../../../core/shared/snackbar.dart';
 import '../../domain/entities/policy_entity.dart';
@@ -46,6 +48,95 @@ class _PolicyDashboardContent extends StatelessWidget {
       onApply: (pCode, json, useCustom, snippet) {
         cubit.updatePolicyConditions(pCode, json, useCustom, snippet);
       },
+    );
+  }
+
+  Widget _buildLanguageSwitcher(BuildContext context) {
+    final currentLang = Localizations.localeOf(context).languageCode;
+    const languages = [
+      DropdownMenuItem(
+        value: 'en',
+        child: Text(
+          'EN',
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+        ),
+      ),
+      DropdownMenuItem(
+        value: 'es',
+        child: Text(
+          'ES',
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+        ),
+      ),
+      DropdownMenuItem(
+        value: 'ar',
+        child: Text(
+          'AR',
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+        ),
+      ),
+    ];
+
+    final validLang = languages.any((l) => l.value == currentLang)
+        ? currentLang
+        : 'en';
+
+    return SizedBox(
+      width: 78,
+      child: Semantics(
+        identifier: 'language_switcher_dropdown',
+        label: 'Switch Language',
+        button: true,
+        child: AppDropdownField<String>(
+          value: validLang,
+          items: languages,
+          onChanged: (val) {
+            if (val != null) {
+              try {
+                context.read<LocaleCubit>().changeLocale(val);
+              } catch (_) {}
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSaveButton(
+    PolicyLoaded state,
+    PolicyCubit cubit,
+    BuildContext context,
+  ) {
+    return Semantics(
+      identifier: 'save_policies_button',
+      button: true,
+      enabled: !state.isSaving,
+      label: state.isSaving ? 'Saving policy changes' : 'Save Changes',
+      hint: 'Save all policy changes',
+      child: AppButton(
+        text: state.isSaving ? 'Saving...' : 'Save Changes',
+        icon: state.isSaving
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : const Icon(Icons.save_outlined, size: 18),
+        enabled: !state.isSaving,
+        onPressed: () async {
+          final message = await cubit.savePolicies();
+          if (context.mounted && message != null && message.isNotEmpty) {
+            showCustomSnackBar(
+              context: context,
+              message: message,
+              type: SnackBarType.success,
+            );
+          }
+        },
+      ),
     );
   }
 
@@ -117,82 +208,90 @@ class _PolicyDashboardContent extends StatelessWidget {
             return ResponsiveBuilder(
               builder: (context, screenSize) {
                 final isSmall = screenSize == ScreenSize.small;
-                final paddingAmount = isSmall ? 16.0 : 24.0;
+                final isMedium = screenSize == ScreenSize.medium;
+                final paddingAmount = isSmall ? 12.0 : (isMedium ? 18.0 : 24.0);
 
                 return Padding(
                   padding: EdgeInsets.all(paddingAmount),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Header Section
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  pageTitle,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headlineSmall
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: const Color(0xFF0F4C81),
-                                      ),
-                                ),
-                                const SizedBox(height: 4),
-                                const Text(
-                                  'Manage Open Policy Agent permissions, conditions, and custom Rego expressions.',
-                                  style: TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 13,
+                      // Header Section - Mobile vs Tablet/Web
+                      if (isSmall) ...[
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    pageTitle,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleLarge
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: const Color(0xFF0F4C81),
+                                        ),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 2),
+                                  const Text(
+                                    'Manage OPA permissions & rules.',
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          Semantics(
-                            identifier: 'save_policies_button',
-                            button: true,
-                            enabled: !state.isSaving,
-                            label: state.isSaving
-                                ? 'Saving policy changes'
-                                : 'Save Changes',
-                            hint: 'Save all policy changes',
-                            child: AppButton(
-                              text: state.isSaving
-                                  ? 'Saving...'
-                                  : 'Save Changes',
-                              icon: state.isSaving
-                                  ? const SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : const Icon(Icons.save_outlined, size: 18),
-                              enabled: !state.isSaving,
-                              onPressed: () async {
-                                final message = await cubit.savePolicies();
-                                if (context.mounted &&
-                                    message != null &&
-                                    message.isNotEmpty) {
-                                  showCustomSnackBar(
-                                    context: context,
-                                    message: message,
-                                    type: SnackBarType.success,
-                                  );
-                                }
-                              },
+                            // const SizedBox(width: 8),
+                            // _buildLanguageSwitcher(context),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          child: _buildSaveButton(state, cubit, context),
+                        ),
+                      ] else ...[
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    pageTitle,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headlineSmall
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: const Color(0xFF0F4C81),
+                                        ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  const Text(
+                                    'Manage Open Policy Agent permissions, conditions, and custom Rego expressions.',
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
+                            // const SizedBox(width: 12),
+                            // _buildLanguageSwitcher(context),
+                            const SizedBox(width: 12),
+                            _buildSaveButton(state, cubit, context),
+                          ],
+                        ),
+                      ],
+                      const SizedBox(height: 16),
 
                       // Controls Bar: Subject Selector
                       Semantics(

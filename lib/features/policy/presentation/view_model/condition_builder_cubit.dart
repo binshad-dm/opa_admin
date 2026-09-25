@@ -4,6 +4,7 @@ import '../../domain/entities/condition_tree_entity.dart';
 import '../../domain/entities/field_definition_entity.dart';
 import '../../domain/entities/policy_entity.dart';
 import '../../domain/usecases/get_fields_usecase.dart';
+import '../../domain/utils/policy_validators.dart';
 import 'condition_builder_state.dart';
 
 class ConditionBuilderCubit extends Cubit<ConditionBuilderState> {
@@ -143,10 +144,80 @@ class ConditionBuilderCubit extends Cubit<ConditionBuilderState> {
     return false;
   }
 
-  bool get isValid {
-    if (state.useCustomRego) {
-      return state.customRegoSnippet.trim().isNotEmpty;
+  String? validateTree([ConditionNodeEntity? node]) {
+    final current = node ?? state.expressionTree;
+
+    if (current is ConditionGroupEntity) {
+      if (current.children.isEmpty) {
+        return 'Empty group detected in preview section. Add rules or remove empty group.';
+      }
+      for (final child in current.children) {
+        final err = validateTree(child);
+        if (err != null) return err;
+      }
+    } else if (current is ConditionRuleEntity) {
+      if (current.field.trim().isEmpty) {
+        return 'Rule field cannot be empty.';
+      }
+
+      final fieldDef = state.fields.cast<FieldDefinitionEntity?>().firstWhere(
+        (f) => f?.fieldName == current.field,
+        orElse: () => null,
+      );
+
+      final val = current.value;
+      final vType = current.valueType;
+
+      if (vType == 'FIELD' || vType == 'FIELD_LIST') {
+        final pathErr = PolicyValidators.validateFieldPath(val?.toString());
+        if (pathErr != null) {
+          return 'Field path for "${fieldDef?.displayName ?? current.field}": $pathErr';
+        }
+      } else {
+        final isArrayOp = current.comparison == 'in' || current.comparison == 'not_in';
+        if (isArrayOp) {
+          final isNum = fieldDef?.fieldType == 'NUMBER';
+          if (val is List) {
+            if (val.isEmpty || val.every((e) => e.toString().trim().isEmpty)) {
+              return 'At least one value is required for "${fieldDef?.displayName ?? current.field}".';
+            }
+            if (isNum) {
+              for (final item in val) {
+                if (num.tryParse(item.toString().trim()) == null) {
+                  return 'All values for "${fieldDef?.displayName ?? current.field}" must be valid numbers.';
+                }
+              }
+            }
+          } else {
+            final arrErr = PolicyValidators.validateArrayValues(val?.toString(), isNumeric: isNum);
+            if (arrErr != null) {
+              return 'Values for "${fieldDef?.displayName ?? current.field}": $arrErr';
+            }
+          }
+        } else if (fieldDef?.fieldType == 'NUMBER') {
+          final numErr = PolicyValidators.validateNumber(val?.toString(), fieldDef?.displayName ?? 'Number');
+          if (numErr != null) return numErr;
+        } else if (fieldDef?.fieldType == 'BOOLEAN') {
+          if (val != true && val != false) {
+            return 'Select a boolean value for "${fieldDef?.displayName ?? current.field}".';
+          }
+        } else {
+          if (val == null || val.toString().trim().isEmpty) {
+            return 'Value is required for "${fieldDef?.displayName ?? current.field}".';
+          }
+        }
+      }
     }
-    return !hasEmptyGroup();
+
+    return null;
   }
+
+  String? get validationError {
+    if (state.useCustomRego) {
+      return PolicyValidators.validateRegoSnippet(state.customRegoSnippet);
+    }
+    return validateTree();
+  }
+
+  bool get isValid => validationError == null;
 }

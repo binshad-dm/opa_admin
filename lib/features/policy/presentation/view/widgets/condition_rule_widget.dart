@@ -4,6 +4,7 @@ import '../../../../../core/design/widgets/app_dropdown_field.dart';
 import '../../../../../core/design/widgets/app_text_form_field.dart';
 import '../../../domain/entities/condition_tree_entity.dart';
 import '../../../domain/entities/field_definition_entity.dart';
+import '../../../domain/utils/policy_validators.dart';
 import 'dynamic_dropdown_widget.dart';
 
 class ConditionRuleWidget extends StatelessWidget {
@@ -195,76 +196,94 @@ class ConditionRuleWidget extends StatelessWidget {
           : (currentStr.isNotEmpty ? '__custom__' : null);
 
       return Expanded(
-        child: Row(
-          children: [
-            SizedBox(
-              width: 175,
-              child: Semantics(
-                identifier: 'condition_rule_field_suggestion_dropdown',
-                label: 'Select field path suggestion',
-                button: true,
-                child: AppDropdownField<String>(
-                  value: dropdownVal,
-                  hintText: 'Select Field...',
-                  items: [
-                    ...userFieldSuggestions.map(
-                      (sf) => DropdownMenuItem<String>(
-                        value: sf,
-                        child: Text(
-                          '$sf (User)',
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                      ),
-                    ),
-                    ...resourceFieldSuggestions.map(
-                      (rf) => DropdownMenuItem<String>(
-                        value: rf,
-                        child: Text(
-                          '$rf (Resource)',
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                      ),
-                    ),
-                    const DropdownMenuItem<String>(
-                      value: '__custom__',
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 360;
+
+            final dropdown = Semantics(
+              identifier: 'condition_rule_field_suggestion_dropdown',
+              label: 'Select field path suggestion',
+              button: true,
+              child: AppDropdownField<String>(
+                value: dropdownVal,
+                hintText: 'Select Field...',
+                items: [
+                  ...userFieldSuggestions.map(
+                    (sf) => DropdownMenuItem<String>(
+                      value: sf,
                       child: Text(
-                        'Custom path...',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontStyle: FontStyle.italic,
-                        ),
+                        '$sf (User)',
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 12),
                       ),
                     ),
-                  ],
-                  onChanged: (val) {
-                    if (val != null && val != '__custom__') {
-                      onChange(rule.copyWith(value: val));
-                    }
-                  },
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Semantics(
-                identifier: 'condition_rule_field_path_text_field',
-                label: 'Field path',
-                textField: true,
-                child: AppTextFormField(
-                  key: ValueKey(
-                    'field_path_${rule.field}_${rule.valueType}_${rule.value}',
                   ),
-                  hintText: rule.valueType == 'FIELD'
-                      ? 'e.g. user.location'
-                      : 'e.g. resource.allowedDepartments',
-                  initialValue: currentStr,
-                  onChanged: (val) => onChange(rule.copyWith(value: val)),
-                ),
+                  ...resourceFieldSuggestions.map(
+                    (rf) => DropdownMenuItem<String>(
+                      value: rf,
+                      child: Text(
+                        '$rf (Resource)',
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ),
+                  const DropdownMenuItem<String>(
+                    value: '__custom__',
+                    child: Text(
+                      'Custom path...',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                ],
+                onChanged: (val) {
+                  if (val != null && val != '__custom__') {
+                    onChange(rule.copyWith(value: val));
+                  }
+                },
               ),
-            ),
-          ],
+            );
+
+            final textField = Semantics(
+              identifier: 'condition_rule_field_path_text_field',
+              label: 'Field path',
+              textField: true,
+              child: AppTextFormField(
+                key: ValueKey(
+                  'field_path_${rule.field}_${rule.valueType}_${rule.value}',
+                ),
+                hintText: rule.valueType == 'FIELD'
+                    ? 'e.g. user.location'
+                    : 'e.g. resource.allowedDepartments',
+                initialValue: currentStr,
+                validator: (val) => PolicyValidators.validateFieldPath(val),
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                onChanged: (val) => onChange(rule.copyWith(value: val)),
+              ),
+            );
+
+            if (isNarrow) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  dropdown,
+                  const SizedBox(height: 8),
+                  textField,
+                ],
+              );
+            }
+
+            return Row(
+              children: [
+                SizedBox(width: 175, child: dropdown),
+                const SizedBox(width: 8),
+                Expanded(child: textField),
+              ],
+            );
+          },
         ),
       );
     }
@@ -284,8 +303,17 @@ class ConditionRuleWidget extends StatelessWidget {
             key: ValueKey('array_${rule.field}_${rule.value}'),
             hintText: 'value1, value2...',
             initialValue: displayValue,
+            validator: (val) => PolicyValidators.validateArrayValues(
+              val,
+              isNumeric: selectedField?.fieldType == 'NUMBER',
+            ),
+            autovalidateMode: AutovalidateMode.onUserInteraction,
             onChanged: (val) {
-              final arr = val.split(',').map((s) => s.trimLeft()).toList();
+              final arr = val
+                  .split(',')
+                  .map((s) => s.trim())
+                  .where((s) => s.isNotEmpty)
+                  .toList();
               onChange(rule.copyWith(value: arr));
             },
           ),
@@ -304,6 +332,8 @@ class ConditionRuleWidget extends StatelessWidget {
             key: ValueKey('val_${rule.field}_${rule.value}'),
             hintText: 'Value...',
             initialValue: rule.value?.toString() ?? '',
+            validator: (val) => PolicyValidators.validateRequired(val, 'Value'),
+            autovalidateMode: AutovalidateMode.onUserInteraction,
             onChanged: (val) => onChange(rule.copyWith(value: val)),
           ),
         ),
@@ -391,6 +421,11 @@ class ConditionRuleWidget extends StatelessWidget {
             keyboardType: TextInputType.number,
             hintText: 'Value...',
             initialValue: rule.value?.toString() ?? '',
+            validator: (val) => PolicyValidators.validateNumber(
+              val,
+              field.displayName,
+            ),
+            autovalidateMode: AutovalidateMode.onUserInteraction,
             onChanged: (val) =>
                 onChange(rule.copyWith(value: num.tryParse(val) ?? val)),
           ),
@@ -407,6 +442,11 @@ class ConditionRuleWidget extends StatelessWidget {
           key: ValueKey('text_${rule.field}_${rule.value}'),
           hintText: 'Value...',
           initialValue: rule.value?.toString() ?? '',
+          validator: (val) => PolicyValidators.validateRequired(
+            val,
+            field.displayName,
+          ),
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           onChanged: (val) => onChange(rule.copyWith(value: val)),
         ),
       ),
@@ -474,13 +514,69 @@ class ConditionRuleWidget extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isCompact = constraints.maxWidth < 650;
+        final isMobile = constraints.maxWidth < 460;
+        final isTablet = constraints.maxWidth < 750;
 
-        if (isCompact) {
+        // Mobile Layout (< 460px)
+        if (isMobile) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 12.0),
             child: Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor.withOpacity(0.04),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Theme.of(context).dividerColor.withOpacity(0.15),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildFieldDropdown(currentField, fieldItems),
+                      ),
+                      const SizedBox(width: 4),
+                      _buildRemoveButton(),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 4,
+                        child: _buildComparisonDropdown(
+                          compOptions,
+                          compDropdownItems,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 5,
+                        child: _buildValueTypeDropdown(valueTypeDropdownItems),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _buildValueInput(),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // Tablet / Compact Layout (460px - 749px)
+        if (isTablet) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12.0),
+            child: Container(
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: Theme.of(context).cardColor.withOpacity(0.04),
                 borderRadius: BorderRadius.circular(8),
@@ -525,6 +621,7 @@ class ConditionRuleWidget extends StatelessWidget {
           );
         }
 
+        // Desktop / Web Layout (>= 750px)
         return Padding(
           padding: const EdgeInsets.only(bottom: 8.0),
           child: Row(

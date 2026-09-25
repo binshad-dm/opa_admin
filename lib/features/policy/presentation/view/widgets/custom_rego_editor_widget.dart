@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../core/design/widgets/app_text_form_field.dart';
+import '../../../domain/utils/policy_validators.dart';
 
 class CustomRegoEditorWidget extends StatelessWidget {
   final String snippet;
@@ -42,6 +43,8 @@ class CustomRegoEditorWidget extends StatelessWidget {
                     initialValue: snippet,
                     maxLines: null,
                     keyboardType: TextInputType.multiline,
+                    validator: (val) => PolicyValidators.validateRegoSnippet(val),
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
                     hintText:
                         '# Write Rego code snippet here...\nallow {\n    input.user.role == "ADMIN"\n}',
                     style: const TextStyle(
@@ -63,6 +66,13 @@ class CustomRegoEditorWidget extends StatelessWidget {
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
                       focusedBorder: InputBorder.none,
+                      errorBorder: InputBorder.none,
+                      focusedErrorBorder: InputBorder.none,
+                      errorStyle: TextStyle(
+                        color: Colors.redAccent,
+                        fontSize: 12,
+                        fontFamily: 'monospace',
+                      ),
                       contentPadding: EdgeInsets.all(8),
                     ),
                     onChanged: onChanged,
