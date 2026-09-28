@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../shared/component/pagination_component.dart';
 import '../../domain/entities/policy_entity.dart';
 import '../../domain/entities/role_dto_entity.dart';
 import '../../domain/entities/user_dto_entity.dart';
@@ -16,6 +18,8 @@ class PolicyCubit extends Cubit<PolicyState> {
   final GetRolesUseCase getRolesUseCase;
   final GetUsersUseCase getUsersUseCase;
   final GetNamespacesUseCase getNamespacesUseCase;
+
+  Timer? _debounceTimer;
 
   PolicyCubit({
     required this.getPoliciesUseCase,
@@ -56,10 +60,19 @@ class PolicyCubit extends Cubit<PolicyState> {
         subjectType: subjectType,
         subjectId: subjectId,
         namespace: moduleName,
+        page: 1,
+        size: 10,
+        search: '',
       );
 
-      List<PolicyEntity> policies = [];
-      policiesRes.fold((_) {}, (p) => policies = p);
+      PaginatedData<PolicyEntity> paginated = const PaginatedData<PolicyEntity>(
+        items: [],
+        totalItems: 0,
+        currentPage: 1,
+        totalPages: 1,
+        itemsPerPage: 10,
+      );
+      policiesRes.fold((_) {}, (p) => paginated = p);
 
       emit(
         PolicyLoaded(
@@ -69,7 +82,9 @@ class PolicyCubit extends Cubit<PolicyState> {
           availableModules: modules,
           roles: roles,
           users: users,
-          policies: policies,
+          paginatedPolicies: paginated,
+          searchQuery: '',
+          modifiedPolicies: const {},
         ),
       );
     } else {
@@ -81,20 +96,47 @@ class PolicyCubit extends Cubit<PolicyState> {
           availableModules: modules,
           roles: roles,
           users: users,
-          policies: const [],
+          paginatedPolicies: const PaginatedData<PolicyEntity>(
+            items: [],
+            totalItems: 0,
+            currentPage: 1,
+            totalPages: 1,
+            itemsPerPage: 10,
+          ),
+          searchQuery: '',
+          modifiedPolicies: const {},
         ),
       );
     }
   }
 
-  Future<void> loadPolicies() async {
+  Future<void> loadPolicies({
+    int? page,
+    int? size,
+    String? search,
+  }) async {
     if (state is! PolicyLoaded) return;
     final currentState = state as PolicyLoaded;
 
     if (currentState.subjectId.isEmpty) {
-      emit(currentState.copyWith(policies: []));
+      emit(
+        currentState.copyWith(
+          paginatedPolicies: PaginatedData<PolicyEntity>(
+            items: const [],
+            totalItems: 0,
+            currentPage: 1,
+            totalPages: 1,
+            itemsPerPage: size ?? currentState.paginatedPolicies.itemsPerPage,
+          ),
+          searchQuery: search ?? currentState.searchQuery,
+        ),
+      );
       return;
     }
+
+    final targetPage = page ?? currentState.paginatedPolicies.currentPage;
+    final targetSize = size ?? currentState.paginatedPolicies.itemsPerPage;
+    final targetSearch = search ?? currentState.searchQuery;
 
     emit(currentState.copyWith(isSaving: false));
 
@@ -102,12 +144,54 @@ class PolicyCubit extends Cubit<PolicyState> {
       subjectType: currentState.subjectType,
       subjectId: currentState.subjectId,
       namespace: currentState.selectedModule,
+      page: targetPage,
+      size: targetSize,
+      search: targetSearch,
     );
 
     result.fold(
       (failure) => emit(PolicyError(failure.message)),
-      (policies) => emit(currentState.copyWith(policies: policies)),
+      (paginated) {
+        // Merge any user modifications that were made to policies on this page
+        final mergedItems = paginated.items.map((p) {
+          if (currentState.modifiedPolicies.containsKey(p.permissionCode)) {
+            return currentState.modifiedPolicies[p.permissionCode]!;
+          }
+          return p;
+        }).toList();
+
+        final updatedPaginated = paginated.copyWith(items: mergedItems);
+
+        emit(
+          currentState.copyWith(
+            paginatedPolicies: updatedPaginated,
+            searchQuery: targetSearch,
+          ),
+        );
+      },
     );
+  }
+
+  void changePage(int newPage) {
+    if (state is! PolicyLoaded) return;
+    loadPolicies(page: newPage);
+  }
+
+  void changePageSize(int newSize) {
+    if (state is! PolicyLoaded) return;
+    loadPolicies(page: 1, size: newSize);
+  }
+
+  void searchPolicies(String query) {
+    if (state is! PolicyLoaded) return;
+    final currentState = state as PolicyLoaded;
+
+    emit(currentState.copyWith(searchQuery: query));
+
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+      loadPolicies(page: 1, search: query);
+    });
   }
 
   void setSubjectType(String newType) {
@@ -121,41 +205,75 @@ class PolicyCubit extends Cubit<PolicyState> {
       newSubjectId = currentState.users.first.id;
     }
 
-    emit(currentState.copyWith(subjectType: newType, subjectId: newSubjectId));
+    emit(
+      currentState.copyWith(
+        subjectType: newType,
+        subjectId: newSubjectId,
+        modifiedPolicies: const {},
+        searchQuery: '',
+      ),
+    );
 
-    loadPolicies();
+    loadPolicies(page: 1, search: '');
   }
 
   void setSubjectId(String id) {
     if (state is! PolicyLoaded) return;
     final currentState = state as PolicyLoaded;
-    emit(currentState.copyWith(subjectId: id));
-    loadPolicies();
+    emit(
+      currentState.copyWith(
+        subjectId: id,
+        modifiedPolicies: const {},
+        searchQuery: '',
+      ),
+    );
+    loadPolicies(page: 1, search: '');
   }
 
   void setSelectedModule(String module) {
     if (state is! PolicyLoaded) return;
     final currentState = state as PolicyLoaded;
-    emit(currentState.copyWith(selectedModule: module));
-    loadPolicies();
+    emit(
+      currentState.copyWith(
+        selectedModule: module,
+        modifiedPolicies: const {},
+        searchQuery: '',
+      ),
+    );
+    loadPolicies(page: 1, search: '');
   }
 
   void togglePolicy(String permissionCode) {
     if (state is! PolicyLoaded) return;
     final currentState = state as PolicyLoaded;
 
-    final updatedPolicies = currentState.policies.map((p) {
+    PolicyEntity? targetPolicy;
+    final updatedItems = currentState.paginatedPolicies.items.map((p) {
       if (p.permissionCode == permissionCode) {
         final newEnabled = !p.enabled;
-        return p.copyWith(
+        final updated = p.copyWith(
           enabled: newEnabled,
           effect: (newEnabled && p.effect.isEmpty) ? 'ALLOW' : p.effect,
         );
+        targetPolicy = updated;
+        return updated;
       }
       return p;
     }).toList();
 
-    emit(currentState.copyWith(policies: updatedPolicies));
+    final updatedModified =
+        Map<String, PolicyEntity>.from(currentState.modifiedPolicies);
+    if (targetPolicy != null) {
+      updatedModified[permissionCode] = targetPolicy!;
+    }
+
+    emit(
+      currentState.copyWith(
+        paginatedPolicies:
+            currentState.paginatedPolicies.copyWith(items: updatedItems),
+        modifiedPolicies: updatedModified,
+      ),
+    );
   }
 
   void openConditionBuilder(String permissionCode) {
@@ -179,20 +297,36 @@ class PolicyCubit extends Cubit<PolicyState> {
     if (state is! PolicyLoaded) return;
     final currentState = state as PolicyLoaded;
 
-    final updated = currentState.policies.map((p) {
+    PolicyEntity? targetPolicy;
+    final updatedItems = currentState.paginatedPolicies.items.map((p) {
       if (p.permissionCode == permissionCode) {
-        return p.copyWith(
+        final updated = p.copyWith(
           enabled: true,
           effect: p.effect.isEmpty ? 'ALLOW' : p.effect,
           expressionJson: expressionJson,
           useCustomRego: useCustomRego,
           customRegoSnippet: customRegoSnippet,
         );
+        targetPolicy = updated;
+        return updated;
       }
       return p;
     }).toList();
 
-    emit(currentState.copyWith(policies: updated, clearActivePermission: true));
+    final updatedModified =
+        Map<String, PolicyEntity>.from(currentState.modifiedPolicies);
+    if (targetPolicy != null) {
+      updatedModified[permissionCode] = targetPolicy!;
+    }
+
+    emit(
+      currentState.copyWith(
+        paginatedPolicies:
+            currentState.paginatedPolicies.copyWith(items: updatedItems),
+        modifiedPolicies: updatedModified,
+        clearActivePermission: true,
+      ),
+    );
   }
 
   Future<String?> savePolicies() async {
@@ -201,9 +335,23 @@ class PolicyCubit extends Cubit<PolicyState> {
 
     emit(currentState.copyWith(isSaving: true, clearSaveError: true));
 
-    final enabledPolicies = currentState.policies
-        .where((p) => p.enabled)
-        .toList();
+    // Combine all enabled policies:
+    // Take all enabled policies from the current page, and merge any modified policies that are enabled
+    final policyMap = <String, PolicyEntity>{};
+    for (final p in currentState.paginatedPolicies.items) {
+      if (p.enabled) {
+        policyMap[p.permissionCode] = p;
+      }
+    }
+    for (final p in currentState.modifiedPolicies.values) {
+      if (p.enabled) {
+        policyMap[p.permissionCode] = p;
+      } else {
+        policyMap.remove(p.permissionCode);
+      }
+    }
+
+    final enabledPolicies = policyMap.values.toList();
 
     try {
       final result = await savePoliciesUseCase(
@@ -228,7 +376,14 @@ class PolicyCubit extends Cubit<PolicyState> {
         (message) {
           final latestState =
               state is PolicyLoaded ? (state as PolicyLoaded) : currentState;
-          emit(latestState.copyWith(isSaving: false, clearSaveError: true));
+          emit(
+            latestState.copyWith(
+              isSaving: false,
+              clearSaveError: true,
+              modifiedPolicies: const {},
+            ),
+          );
+          loadPolicies();
           return message;
         },
       );
@@ -251,5 +406,11 @@ class PolicyCubit extends Cubit<PolicyState> {
     if (currentState.saveError != null) {
       emit(currentState.copyWith(clearSaveError: true));
     }
+  }
+
+  @override
+  Future<void> close() {
+    _debounceTimer?.cancel();
+    return super.close();
   }
 }

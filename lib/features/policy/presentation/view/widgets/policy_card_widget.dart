@@ -78,6 +78,25 @@ class PolicyCardWidget extends StatelessWidget {
                       ),
                     ),
                   ),
+                if (policy.deprecated)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      'Deprecated',
+                      style: TextStyle(
+                        color: Colors.amber,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 if (policy.disabledReason != null &&
                     policy.disabledReason!.isNotEmpty)
                   Container(

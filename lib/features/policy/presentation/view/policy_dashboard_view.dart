@@ -9,6 +9,7 @@ import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/l10n/locale_cubit.dart';
 import '../../../../core/service_locator.dart';
 import '../../../../core/shared/snackbar.dart';
+import '../../../../shared/component/pagination_component.dart';
 import '../../domain/entities/policy_entity.dart';
 import '../view_model/policy_cubit.dart';
 import '../view_model/policy_state.dart';
@@ -260,8 +261,8 @@ class _PolicyDashboardContent extends StatelessWidget {
                                 ],
                               ),
                             ),
-                            // const SizedBox(width: 8),
-                            // _buildLanguageSwitcher(context),
+                            const SizedBox(width: 8),
+                            _buildLanguageSwitcher(context),
                           ],
                         ),
                         const SizedBox(height: 10),
@@ -298,8 +299,8 @@ class _PolicyDashboardContent extends StatelessWidget {
                                 ],
                               ),
                             ),
-                            // const SizedBox(width: 12),
-                            // _buildLanguageSwitcher(context),
+                            const SizedBox(width: 12),
+                            _buildLanguageSwitcher(context),
                             const SizedBox(width: 12),
                             _buildSaveButton(state, cubit, context),
                           ],
@@ -373,21 +374,35 @@ class _PolicyDashboardContent extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
 
-                      // Policy Grid List Body
+                      // Paginated Policy Grid
                       Expanded(
                         child: Semantics(
                           container: true,
                           label:
                               'Policy list for module ${state.selectedModule}',
-                          child: PolicyGridWidget(
-                            policies: state.policies,
-                            onTogglePolicy: cubit.togglePolicy,
-                            onEditConditions: (permissionCode) {
-                              _openConditionBuilder(
-                                context,
-                                cubit,
-                                permissionCode,
-                                state.policies,
+                          child: PaginatedListWrapper<PolicyEntity>(
+                            padding: EdgeInsets.zero,
+                            data: state.paginatedPolicies,
+                            currentSearchQuery: state.searchQuery,
+                            searchHint: 'Search policies...',
+                            emptyStateMessage:
+                                'No policies found for this module and subject.',
+                            itemsPerPageOptions: const [5, 10, 20, 50],
+                            onPageChange: cubit.changePage,
+                            onItemsPerPageChange: cubit.changePageSize,
+                            onSearchQueryChange: cubit.searchPolicies,
+                            bodyBuilder: (context, paginatedData) {
+                              return PolicyGridWidget(
+                                policies: paginatedData.items,
+                                onTogglePolicy: cubit.togglePolicy,
+                                onEditConditions: (permissionCode) {
+                                  _openConditionBuilder(
+                                    context,
+                                    cubit,
+                                    permissionCode,
+                                    paginatedData.items,
+                                  );
+                                },
                               );
                             },
                           ),

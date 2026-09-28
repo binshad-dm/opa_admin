@@ -10,24 +10,39 @@ import '../../domain/repositories/policy_repository.dart';
 import '../datasources/policy_remote_data_source.dart';
 import '../models/policy_model.dart';
 
+import '../../../../shared/component/pagination_component.dart';
+
 class PolicyRepositoryImpl implements PolicyRepository {
   final PolicyRemoteDataSource remoteDataSource;
 
   PolicyRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<Either<Failure, List<PolicyEntity>>> getPolicies({
+  Future<Either<Failure, PaginatedData<PolicyEntity>>> getPolicies({
     required String subjectType,
     required String subjectId,
     required String namespace,
+    int page = 1,
+    int size = 10,
+    String? search,
   }) async {
     try {
-      final policies = await remoteDataSource.fetchPolicies(
+      final paginatedModels = await remoteDataSource.fetchPolicies(
         subjectType,
         subjectId,
         namespace,
+        page: page,
+        size: size,
+        search: search,
       );
-      return Right(List<PolicyEntity>.from(policies));
+      final paginatedEntities = PaginatedData<PolicyEntity>(
+        items: List<PolicyEntity>.from(paginatedModels.items),
+        totalItems: paginatedModels.totalItems,
+        currentPage: paginatedModels.currentPage,
+        totalPages: paginatedModels.totalPages,
+        itemsPerPage: paginatedModels.itemsPerPage,
+      );
+      return Right(paginatedEntities);
     } catch (e) {
       return Left(ErrorMapper.from(e));
     }

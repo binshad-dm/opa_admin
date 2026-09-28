@@ -44,6 +44,7 @@ class SubjectSelectorWidget extends StatelessWidget {
           .toList();
     } else {
       items = users
+          .where((u) => u.isActive)
           .map(
             (u) => DropdownMenuItem<String>(
               value: u.id,

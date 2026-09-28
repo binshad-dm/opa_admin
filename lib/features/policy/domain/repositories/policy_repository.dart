@@ -6,11 +6,16 @@ import '../entities/policy_entity.dart';
 import '../entities/role_dto_entity.dart';
 import '../entities/user_dto_entity.dart';
 
+import '../../../../shared/component/pagination_component.dart';
+
 abstract class PolicyRepository {
-  Future<Either<Failure, List<PolicyEntity>>> getPolicies({
+  Future<Either<Failure, PaginatedData<PolicyEntity>>> getPolicies({
     required String subjectType,
     required String subjectId,
     required String namespace,
+    int page = 1,
+    int size = 10,
+    String? search,
   });
 
   Future<Either<Failure, String>> savePolicies({

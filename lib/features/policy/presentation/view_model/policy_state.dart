@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../../shared/component/pagination_component.dart';
 import '../../domain/entities/policy_entity.dart';
 import '../../domain/entities/role_dto_entity.dart';
 import '../../domain/entities/user_dto_entity.dart';
@@ -28,23 +29,39 @@ class PolicyLoaded extends PolicyState {
   final List<String> availableModules;
   final List<RoleDtoEntity> roles;
   final List<UserDtoEntity> users;
-  final List<PolicyEntity> policies;
+  final PaginatedData<PolicyEntity> paginatedPolicies;
+  final String searchQuery;
   final String? activeConditionPermission;
   final bool isSaving;
   final String? saveError;
+  final Map<String, PolicyEntity> modifiedPolicies;
 
-  const PolicyLoaded({
+  List<PolicyEntity> get policies => paginatedPolicies.items;
+
+  PolicyLoaded({
     required this.subjectType,
     required this.subjectId,
     required this.selectedModule,
     required this.availableModules,
     required this.roles,
     required this.users,
-    required this.policies,
+    PaginatedData<PolicyEntity>? paginatedPolicies,
+    List<PolicyEntity>? policies,
+    this.searchQuery = '',
     this.activeConditionPermission,
     this.isSaving = false,
     this.saveError,
-  });
+    this.modifiedPolicies = const {},
+  }) : paginatedPolicies = paginatedPolicies ??
+            PaginatedData<PolicyEntity>(
+              items: policies ?? const [],
+              totalItems: (policies ?? const []).length,
+              currentPage: 1,
+              totalPages: 1,
+              itemsPerPage: (policies != null && policies.isNotEmpty)
+                  ? policies.length
+                  : 10,
+            );
 
   PolicyLoaded copyWith({
     String? subjectType,
@@ -53,10 +70,13 @@ class PolicyLoaded extends PolicyState {
     List<String>? availableModules,
     List<RoleDtoEntity>? roles,
     List<UserDtoEntity>? users,
+    PaginatedData<PolicyEntity>? paginatedPolicies,
     List<PolicyEntity>? policies,
+    String? searchQuery,
     String? activeConditionPermission,
     bool? isSaving,
     String? saveError,
+    Map<String, PolicyEntity>? modifiedPolicies,
     bool clearActivePermission = false,
     bool clearSaveError = false,
   }) {
@@ -67,12 +87,17 @@ class PolicyLoaded extends PolicyState {
       availableModules: availableModules ?? this.availableModules,
       roles: roles ?? this.roles,
       users: users ?? this.users,
-      policies: policies ?? this.policies,
+      paginatedPolicies: paginatedPolicies ??
+          (policies != null
+              ? this.paginatedPolicies.copyWith(items: policies)
+              : this.paginatedPolicies),
+      searchQuery: searchQuery ?? this.searchQuery,
       activeConditionPermission: clearActivePermission
           ? null
           : (activeConditionPermission ?? this.activeConditionPermission),
       isSaving: isSaving ?? this.isSaving,
       saveError: clearSaveError ? null : (saveError ?? this.saveError),
+      modifiedPolicies: modifiedPolicies ?? this.modifiedPolicies,
     );
   }
 
@@ -84,10 +109,12 @@ class PolicyLoaded extends PolicyState {
         availableModules,
         roles,
         users,
-        policies,
+        paginatedPolicies,
+        searchQuery,
         activeConditionPermission,
         isSaving,
         saveError,
+        modifiedPolicies,
       ];
 }
 

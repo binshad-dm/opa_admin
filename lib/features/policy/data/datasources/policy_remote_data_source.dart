@@ -8,12 +8,17 @@ import '../models/policy_model.dart';
 import '../models/role_dto_model.dart';
 import '../models/user_dto_model.dart';
 
+import '../../../../shared/component/pagination_component.dart';
+
 abstract class PolicyRemoteDataSource {
-  Future<List<PolicyModel>> fetchPolicies(
+  Future<PaginatedData<PolicyModel>> fetchPolicies(
     String subjectType,
     String subjectId,
-    String namespace,
-  );
+    String namespace, {
+    int page = 1,
+    int size = 10,
+    String? search,
+  });
 
   Future<String> savePolicies(
     String subjectType,
@@ -69,23 +74,96 @@ class PolicyRemoteDataSourceImpl implements PolicyRemoteDataSource {
   }
 
   @override
-  Future<List<PolicyModel>> fetchPolicies(
+  Future<PaginatedData<PolicyModel>> fetchPolicies(
     String subjectType,
     String subjectId,
-    String namespace,
-  ) async {
+    String namespace, {
+    int page = 1,
+    int size = 10,
+    String? search,
+  }) async {
     final baseUrl = _getApiBaseUrl(namespace);
-    final url =
-        '$baseUrl${PolicyEndpoints.policies}?subjectType=$subjectType&subjectId=$subjectId&namespace=$namespace';
+    final queryParams = <String, dynamic>{
+      'subjectType': subjectType,
+      'subjectId': subjectId,
+      'namespace': namespace,
+      'page': page,
+      'size': size,
+      if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+    };
 
-    final response = await dio.get(url);
+    final response = await dio.get(
+      '$baseUrl${PolicyEndpoints.policies}',
+      queryParameters: queryParams,
+    );
+
     if (response.statusCode == 200 && response.data != null) {
-      final List<dynamic> list = response.data is List
-          ? response.data
-          : (response.data['policies'] ?? []);
-      return list
-          .map((e) => PolicyModel.fromJson(e as Map<String, dynamic>))
-          .toList();
+      final data = response.data;
+      if (data is Map<String, dynamic> && data['content'] != null) {
+        final List<dynamic> list = data['content'] as List<dynamic>? ?? [];
+        final items = list
+            .map((e) => PolicyModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+
+        final rawPageNumber = data['pageNumber'] ?? data['number'];
+        int pageNumber = 1;
+        if (rawPageNumber is int) {
+          pageNumber = rawPageNumber;
+        } else if (rawPageNumber != null) {
+          pageNumber = int.tryParse(rawPageNumber.toString()) ?? 1;
+        }
+
+        final rawPageSize = data['pageSize'] ?? data['size'] ?? size;
+        int pageSize = size;
+        if (rawPageSize is int) {
+          pageSize = rawPageSize;
+        } else if (rawPageSize != null) {
+          pageSize = int.tryParse(rawPageSize.toString()) ?? size;
+        }
+
+        final rawTotalElements = data['totalElements'] ?? items.length;
+        int totalElements = items.length;
+        if (rawTotalElements is int) {
+          totalElements = rawTotalElements;
+        } else if (rawTotalElements != null) {
+          totalElements =
+              int.tryParse(rawTotalElements.toString()) ?? items.length;
+        }
+
+        final rawTotalPages = data['totalPages'];
+        int totalPages = 1;
+        if (rawTotalPages is int) {
+          totalPages = rawTotalPages;
+        } else if (rawTotalPages != null) {
+          totalPages = int.tryParse(rawTotalPages.toString()) ?? 1;
+        } else if (pageSize > 0) {
+          totalPages = (totalElements / pageSize).ceil();
+        }
+
+        return PaginatedData<PolicyModel>(
+          items: items,
+          totalItems: totalElements,
+          currentPage: pageNumber,
+          totalPages: totalPages > 0 ? totalPages : 1,
+          itemsPerPage: pageSize,
+        );
+      } else {
+        // Fallback for raw List or { policies: [...] }
+        final List<dynamic> list = data is List
+            ? data
+            : (data is Map ? (data['policies'] ?? []) : []);
+        final allItems = list
+            .map((e) => PolicyModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+
+        return PaginatedData<PolicyModel>(
+          items: allItems,
+          totalItems: allItems.length,
+          currentPage: 1,
+          totalPages: 1,
+          itemsPerPage: allItems.isNotEmpty ? allItems.length : 10,
+        );
+      }
     }
     throw DioException(
       requestOptions: response.requestOptions,

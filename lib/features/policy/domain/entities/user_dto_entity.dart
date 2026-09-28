@@ -5,10 +5,12 @@ class UserDtoEntity extends Equatable {
   final String email;
   final String? firstName;
   final String? lastName;
+  final String status;
 
   const UserDtoEntity({
     required this.id,
     required this.email,
+    required this.status,
     this.firstName,
     this.lastName,
   });
@@ -21,6 +23,10 @@ class UserDtoEntity extends Equatable {
     return email;
   }
 
+  bool get isActive {
+    return status.toLowerCase() == 'ACTIVE';
+  }
+
   @override
-  List<Object?> get props => [id, email, firstName, lastName];
+  List<Object?> get props => [id, email, firstName, lastName, status];
 }
