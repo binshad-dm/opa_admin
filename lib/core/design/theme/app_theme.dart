@@ -107,7 +107,7 @@ class AppTheme extends GetxController {
     );
   }
 
-  static final ThemeData dentalTheme = _baseTheme(
+  static final ThemeData appTheme = _baseTheme(
     const ColorScheme.light(
       primary: AppColors.appThemeColorLight,
       secondary: Color(0xFF4A6572),
@@ -135,7 +135,7 @@ class AppTheme extends GetxController {
     Colors.white,
   );
 
-  static final ThemeData dentalDarkTheme = _baseTheme(
+  static final ThemeData appThemeDarkTheme = _baseTheme(
     const ColorScheme.dark(
       primary: AppColors.appThemeColorLight,
       secondary: Color(0xFF4A6572),

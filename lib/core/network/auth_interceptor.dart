@@ -1,13 +1,12 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-import 'package:get/get.dart';
 
+import '../config/opa_config.dart';
 import 'auth_api.dart';
 import 'token_manager.dart';
+import 'token_pair.dart';
 import 'user_context.dart';
-import '../../app/navigation/routes.dart';
-import '../service_locator.dart';
 
 class _QueuedRequest {
   final RequestOptions requestOptions;
@@ -25,6 +24,7 @@ class AuthInterceptor extends Interceptor {
   final TokenManager tokenManager;
   final AuthApi authApi;
   final UserContext? userContext;
+  final OpaConfig? opaConfig;
   Dio? dio;
 
   final List<_QueuedRequest> _retryQueue = [];
@@ -35,6 +35,7 @@ class AuthInterceptor extends Interceptor {
     required this.tokenManager,
     required this.authApi,
     this.userContext,
+    this.opaConfig,
     this.dio,
   });
 
@@ -65,6 +66,57 @@ class AuthInterceptor extends Interceptor {
     }
 
     if (err.response?.statusCode == 401 || err.response?.statusCode == 403) {
+      // 1. Package Mode with external Refresh Token Handler
+      if (opaConfig?.onRefreshToken != null) {
+        _retryQueue.add(
+          _QueuedRequest(
+            requestOptions: err.requestOptions,
+            handler: h,
+            originalError: err,
+          ),
+        );
+
+        if (_refreshCompleter == null) {
+          _refreshCompleter = Completer<void>();
+          try {
+            final newAccessToken = await opaConfig!.onRefreshToken!();
+            if (newAccessToken == null || newAccessToken.isEmpty) {
+              throw Exception('Refresh token returned null or empty');
+            }
+            await tokenManager.save(
+              TokenPair(accessToken: newAccessToken, refreshToken: ''),
+            );
+            _refreshCompleter?.complete();
+          } catch (e) {
+            _refreshCompleter?.completeError(e);
+            _rejectAllQueuedRequests(err);
+            _retryQueue.clear();
+            opaConfig?.onSessionExpired?.call();
+            return;
+          } finally {
+            _refreshCompleter = null;
+          }
+        } else {
+          try {
+            await _refreshCompleter!.future;
+          } catch (e) {
+            return;
+          }
+        }
+
+        if (!_isProcessingQueue) {
+          _processQueuedRequests();
+        }
+        return;
+      }
+
+      // 2. Package Mode without refresh handler: direct session expired
+      if (opaConfig != null) {
+        opaConfig!.onSessionExpired?.call();
+        return h.next(err);
+      }
+
+      // 3. Standalone Dev Mode fallback
       _retryQueue.add(
         _QueuedRequest(
           requestOptions: err.requestOptions,

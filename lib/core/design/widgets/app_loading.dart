@@ -9,7 +9,7 @@ class AppLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = AppTheme.dentalTheme;
+    final theme = AppTheme.appTheme;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,

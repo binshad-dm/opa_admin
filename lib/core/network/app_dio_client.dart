@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'dio_client.dart';
 import 'custom_header_interceptor.dart';
@@ -10,6 +9,7 @@ import 'token_manager.dart';
 import 'tenant_manager.dart';
 import 'user_context.dart';
 import 'auth_api.dart';
+import '../config/opa_config.dart';
 import '../../app/env/env.dart';
 
 class AppDioClient extends DioClient {
@@ -17,6 +17,7 @@ class AppDioClient extends DioClient {
   final TenantManager tenantManager;
   final UserContext userContext;
   final AuthApi authApi;
+  final OpaConfig? opaConfig;
 
   AppDioClient(
     Env env, {
@@ -24,6 +25,7 @@ class AppDioClient extends DioClient {
     required this.tenantManager,
     required this.userContext,
     required this.authApi,
+    this.opaConfig,
   }) : super(env);
 
   @override
@@ -32,6 +34,7 @@ class AppDioClient extends DioClient {
       tokenManager: tokenManager,
       authApi: authApi,
       userContext: userContext,
+      opaConfig: opaConfig,
       dio: dio,
     );
 
@@ -39,7 +42,7 @@ class AppDioClient extends DioClient {
     dio.interceptors.addAll([
       RequestIdInterceptor(),
       TenantInterceptor(tenantManager),
-      CustomHeaderInterceptor(), // Added the custom headers for backend
+      CustomHeaderInterceptor(),
       authInterceptor,
       RetryInterceptor(),
     ]);

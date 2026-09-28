@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/design/theme/app_theme.dart';
 import '../../../../core/design/responsive/responsive_builder.dart';
 import '../../../../core/design/widgets/app_button.dart';
 import '../../../../core/design/widgets/app_dropdown_field.dart';
@@ -20,9 +21,12 @@ class PolicyDashboardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => sl<PolicyCubit>()..initDashboard(),
-      child: const _PolicyDashboardContent(),
+    return Theme(
+      data: AppTheme.appTheme,
+      child: BlocProvider(
+        create: (context) => sl<PolicyCubit>()..initDashboard(),
+        child: const _PolicyDashboardContent(),
+      ),
     );
   }
 }
@@ -246,8 +250,8 @@ class _PolicyDashboardContent extends StatelessWidget {
                                 ],
                               ),
                             ),
-                            // const SizedBox(width: 8),
-                            // _buildLanguageSwitcher(context),
+                            const SizedBox(width: 8),
+                            _buildLanguageSwitcher(context),
                           ],
                         ),
                         const SizedBox(height: 10),
@@ -284,8 +288,8 @@ class _PolicyDashboardContent extends StatelessWidget {
                                 ],
                               ),
                             ),
-                            // const SizedBox(width: 12),
-                            // _buildLanguageSwitcher(context),
+                            const SizedBox(width: 12),
+                            _buildLanguageSwitcher(context),
                             const SizedBox(width: 12),
                             _buildSaveButton(state, cubit, context),
                           ],
