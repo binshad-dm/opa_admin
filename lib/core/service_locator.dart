@@ -46,7 +46,7 @@ Future<void> initServiceLocator({OpaConfig? config}) async {
   if (config != null) {
     env = Env(
       apiBaseUrl: config.baseUrl,
-      authBaseUrl: '',
+      authBaseUrl: config.baseUrl,
       enableLogging: kDebugMode,
       flavor: 'prod',
     );

@@ -32,7 +32,7 @@ dependencies:
   opa_admin:
     git:
       url: https://github.com/binshad-dm/opa_admin.git
-      ref: master # or specific tag/branch
+      ref: development # or specific tag/branch
 ```
 
 #### Option B: Via Local Path (For local development)

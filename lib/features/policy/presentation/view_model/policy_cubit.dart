@@ -199,30 +199,57 @@ class PolicyCubit extends Cubit<PolicyState> {
     if (state is! PolicyLoaded) return null;
     final currentState = state as PolicyLoaded;
 
-    emit(currentState.copyWith(isSaving: true, saveError: null));
+    emit(currentState.copyWith(isSaving: true, clearSaveError: true));
 
     final enabledPolicies = currentState.policies
         .where((p) => p.enabled)
         .toList();
 
-    final result = await savePoliciesUseCase(
-      subjectType: currentState.subjectType,
-      subjectId: currentState.subjectId,
-      namespace: currentState.selectedModule,
-      policies: enabledPolicies,
-    );
+    try {
+      final result = await savePoliciesUseCase(
+        subjectType: currentState.subjectType,
+        subjectId: currentState.subjectId,
+        namespace: currentState.selectedModule,
+        policies: enabledPolicies,
+      );
 
-    return result.fold(
-      (failure) {
-        emit(
-          currentState.copyWith(isSaving: false, saveError: failure.message),
-        );
-        return null;
-      },
-      (message) {
-        emit(currentState.copyWith(isSaving: false));
-        return message;
-      },
-    );
+      return result.fold(
+        (failure) {
+          final latestState =
+              state is PolicyLoaded ? (state as PolicyLoaded) : currentState;
+          emit(
+            latestState.copyWith(
+              isSaving: false,
+              saveError: failure.message,
+            ),
+          );
+          return null;
+        },
+        (message) {
+          final latestState =
+              state is PolicyLoaded ? (state as PolicyLoaded) : currentState;
+          emit(latestState.copyWith(isSaving: false, clearSaveError: true));
+          return message;
+        },
+      );
+    } catch (e) {
+      final latestState =
+          state is PolicyLoaded ? (state as PolicyLoaded) : currentState;
+      emit(
+        latestState.copyWith(
+          isSaving: false,
+          saveError: e.toString(),
+        ),
+      );
+      return null;
+    }
+  }
+
+  void clearSaveError() {
+    if (state is! PolicyLoaded) return;
+    final currentState = state as PolicyLoaded;
+    if (currentState.saveError != null) {
+      emit(currentState.copyWith(clearSaveError: true));
+    }
   }
 }

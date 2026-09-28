@@ -58,6 +58,7 @@ class PolicyLoaded extends PolicyState {
     bool? isSaving,
     String? saveError,
     bool clearActivePermission = false,
+    bool clearSaveError = false,
   }) {
     return PolicyLoaded(
       subjectType: subjectType ?? this.subjectType,
@@ -71,7 +72,7 @@ class PolicyLoaded extends PolicyState {
           ? null
           : (activeConditionPermission ?? this.activeConditionPermission),
       isSaving: isSaving ?? this.isSaving,
-      saveError: saveError,
+      saveError: clearSaveError ? null : (saveError ?? this.saveError),
     );
   }
 

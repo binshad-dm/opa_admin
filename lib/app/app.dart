@@ -29,7 +29,7 @@ class AppRoot extends StatelessWidget {
           ],
           supportedLocales: const [Locale('en'), Locale('es'), Locale('ar')],
           // theme: _buildThemeWithPoppins(themeController.currentTheme),
-          theme: AppTheme.dentalTheme,
+          theme: AppTheme.appTheme,
           // theme: AppTheme.dentalTheme,
           themeMode: ThemeMode.system,
           initialRoute: initialRoute,

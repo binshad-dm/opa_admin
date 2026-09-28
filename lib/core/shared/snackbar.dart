@@ -1,18 +1,54 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:get_it/get_it.dart';
+import '../service_locator.dart';
 
 enum SnackBarType { success, failure, alert, normal, delete }
 
-showCustomSnackBar(
-    {required BuildContext context,
-    required String message,
-    VoidCallback? onRetry,
-    SnackBarType type = SnackBarType.normal,
-    int duration = 10000,
-    bool autoDismiss = true}) {
-  GetIt.I<NotificationManager>()
-      .showNotification(context, message, type, duration, autoDismiss);
+final NotificationManager _fallbackNotificationManager = NotificationManager();
+
+NotificationManager _getNotificationManager() {
+  try {
+    if (sl.isRegistered<NotificationManager>()) {
+      return sl<NotificationManager>();
+    }
+  } catch (_) {}
+  try {
+    if (GetIt.I.isRegistered<NotificationManager>()) {
+      return GetIt.I<NotificationManager>();
+    }
+  } catch (_) {}
+  return _fallbackNotificationManager;
+}
+
+void showCustomSnackBar({
+  required BuildContext context,
+  required String message,
+  VoidCallback? onRetry,
+  SnackBarType type = SnackBarType.normal,
+  int duration = 4000,
+  bool autoDismiss = true,
+}) {
+  try {
+    _getNotificationManager().showNotification(
+      context,
+      message,
+      type,
+      duration,
+      autoDismiss,
+    );
+  } catch (e) {
+    debugPrint('showCustomSnackBar failed: $e');
+    try {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: getSnackBarBackgroundColor(type),
+          duration: Duration(milliseconds: duration),
+        ),
+      );
+    } catch (_) {}
+  }
 }
 
 Color getSnackBarBackgroundColor(SnackBarType type) {
@@ -49,9 +85,24 @@ class NotificationManager {
   final List<NotificationData> _notifications = [];
   OverlayEntry? _overlayEntry;
 
-  void showNotification(BuildContext context, String message, SnackBarType type,
-      int duration, bool autoDismiss) {
-    final overlay = Overlay.of(context);
+  void showNotification(
+    BuildContext context,
+    String message,
+    SnackBarType type,
+    int duration,
+    bool autoDismiss,
+  ) {
+    final overlay = Overlay.maybeOf(context);
+    if (overlay == null) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: getSnackBarBackgroundColor(type),
+          duration: Duration(milliseconds: duration),
+        ),
+      );
+      return;
+    }
 
     final animationController = AnimationController(
       duration: const Duration(milliseconds: 500),
@@ -92,9 +143,7 @@ class NotificationManager {
                 for (int i = 0; i < _notifications.length; i++) ...[
                   if (i > 0)
                     const Gap(12), // Add vertical spacing between snackbars
-                  AnimatedNotificationWidget(
-                    notification: _notifications[i],
-                  ),
+                  AnimatedNotificationWidget(notification: _notifications[i]),
                 ],
               ],
             ),
@@ -137,10 +186,7 @@ class NotificationManager {
 class AnimatedNotificationWidget extends StatelessWidget {
   final NotificationData notification;
 
-  const AnimatedNotificationWidget({
-    super.key,
-    required this.notification,
-  });
+  const AnimatedNotificationWidget({super.key, required this.notification});
 
   @override
   Widget build(BuildContext context) {
@@ -155,13 +201,15 @@ class AnimatedNotificationWidget extends StatelessWidget {
         );
 
         final offset =
-            Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero)
-                .animate(
-          CurvedAnimation(
-            parent: notification.curvedAnimation,
-            curve: Curves.easeInOut,
-          ),
-        );
+            Tween<Offset>(
+              begin: const Offset(0, 0.05),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(
+                parent: notification.curvedAnimation,
+                curve: Curves.easeInOut,
+              ),
+            );
 
         final scale = Tween<double>(begin: 0.98, end: 1.0).animate(
           CurvedAnimation(
@@ -182,18 +230,23 @@ class AnimatedNotificationWidget extends StatelessWidget {
                 onDismissed: (direction) =>
                     notification.onDismiss(notification),
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   child: Material(
                     elevation: 4,
                     borderRadius: BorderRadius.circular(8),
                     color: const Color(
-                        0xFF2B2D31), // Neutral dark background (Jira-like)
+                      0xFF2B2D31,
+                    ), // Neutral dark background (Jira-like)
                     shadowColor: Colors.black.withOpacity(0.2),
                     child: Container(
                       constraints: const BoxConstraints(maxWidth: 420),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -214,9 +267,7 @@ class AnimatedNotificationWidget extends StatelessWidget {
                           Expanded(
                             child: Text(
                               notification.message,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
+                              style: Theme.of(context).textTheme.bodyMedium
                                   ?.copyWith(
                                     color: Colors.white,
                                     fontSize: 14,

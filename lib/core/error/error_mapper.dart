@@ -5,43 +5,60 @@ import 'failure.dart';
 
 class ErrorMapper {
   static Failure from(Object e) {
-    if (e is DioException) {
-      final s = e.response?.statusCode ?? 0;
-      final path = e.requestOptions.path;
-
-      if (s >= 400 && s < 500) {
-        // ── Try to parse the response body ──────────────────────────────────
+    try {
+      if (e is DioException) {
+        final s = e.response?.statusCode ?? 0;
+        final path = e.requestOptions.path;
         dynamic data = e.response?.data;
         Map<String, dynamic>? errorMap;
 
         if (data is Map) {
-          errorMap = data.cast<String, dynamic>();
+          try {
+            errorMap = Map<String, dynamic>.from(data);
+          } catch (_) {
+            errorMap = data.map((k, v) => MapEntry(k.toString(), v));
+          }
         } else if (data is String && data.isNotEmpty) {
           try {
-            errorMap = jsonDecode(data) as Map<String, dynamic>;
+            final decoded = jsonDecode(data);
+            if (decoded is Map) {
+              errorMap = Map<String, dynamic>.from(decoded);
+            }
           } catch (_) {}
         }
 
+        String? extractedMessage;
+        String? extractedErrorCode;
+
         if (errorMap != null) {
           final detail = errorMap['detail']?.toString();
+          final message = errorMap['message']?.toString();
           final title = errorMap['title']?.toString();
           final error = errorMap['error']?.toString();
+          final properties = errorMap['properties'];
+          final propCode =
+              properties is Map ? properties['errorCode']?.toString() : null;
           final errorCode =
-              errorMap['properties']?['errorCode']?.toString() ?? title;
+              propCode ?? errorMap['errorCode']?.toString() ?? title;
+
+          extractedErrorCode = errorCode;
 
           // Return the most specific message available
           if (detail != null && detail.isNotEmpty) {
-            return NetworkFailure(detail, errorCode: errorCode);
+            extractedMessage = detail;
+          } else if (message != null && message.isNotEmpty) {
+            extractedMessage = message;
+          } else if (title != null && title.isNotEmpty) {
+            extractedMessage = title;
+          } else if (error != null && error.isNotEmpty) {
+            extractedMessage = error;
+          } else if (errorCode != null && errorCode.isNotEmpty) {
+            extractedMessage = errorCode;
           }
-          if (title != null && title.isNotEmpty) {
-            return NetworkFailure(title, errorCode: errorCode);
-          }
-          if (error != null && error.isNotEmpty) {
-            return NetworkFailure(error, errorCode: errorCode);
-          }
-          if (errorCode != null && errorCode.isNotEmpty) {
-            return NetworkFailure(errorCode, errorCode: errorCode);
-          }
+        } else if (data is String &&
+            data.isNotEmpty &&
+            !data.trim().startsWith('<')) {
+          extractedMessage = data.trim();
         }
 
         // ── Auth errors ─────────────────────────────────────────────────────
@@ -51,41 +68,64 @@ class ErrorMapper {
               'Invalid email/username or password. Please try again.',
             );
           }
-          return const AuthFailure('Your session expired.');
+          return AuthFailure(extractedMessage ?? 'Your session expired.');
         }
 
-        // ── Supervisor-only close endpoint fallback ──────────────────────────
-        if (path.contains('/close')) {
+        if (s >= 400 && s < 500) {
+          // Supervisor-only close endpoint fallback
+          if (path.contains('/close')) {
+            return const NetworkFailure(
+              'Only a Supervisor can complete this case sheet.',
+            );
+          }
+
+          if (extractedMessage != null && extractedMessage.isNotEmpty) {
+            return NetworkFailure(
+              extractedMessage,
+              errorCode: extractedErrorCode,
+            );
+          }
+
           return const NetworkFailure(
-            'Only a Supervisor can complete this case sheet.',
+            'Something went wrong. Please try again.',
           );
         }
 
-        // ── Fallback: never show raw Dio message for client errors ──────────
-        return const NetworkFailure('Something went wrong. Please try again.');
-      }
-
-      if (s == 401) {
-        if (path.contains('/login')) {
-          return const AuthFailure(
-            'Invalid email/username or password. Please try again.',
+        if (s >= 500) {
+          if (extractedMessage != null && extractedMessage.isNotEmpty) {
+            return NetworkFailure(
+              extractedMessage,
+              errorCode: extractedErrorCode,
+            );
+          }
+          return const NetworkFailure(
+            'Something went wrong. Please try again later.',
           );
         }
-        return const AuthFailure('Your session expired.');
-      }
-      if (s >= 500) {
+
+        // No status code (connection error, timeout, etc.)
+        if (e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.sendTimeout ||
+            e.type == DioExceptionType.receiveTimeout) {
+          return const NetworkFailure(
+            'Connection timed out. Please check your network.',
+          );
+        }
+        if (extractedMessage != null && extractedMessage.isNotEmpty) {
+          return NetworkFailure(extractedMessage);
+        }
+        if (e.message != null && e.message!.isNotEmpty) {
+          return NetworkFailure(e.message!);
+        }
         return const NetworkFailure(
-          'Something went wrong. Please try again later.',
+          'Unable to connect. Please check your network.',
         );
       }
-
-      // No status code (connection error, timeout, etc.)
-      return const NetworkFailure(
-        'Unable to connect. Please check your network.',
-      );
+      if (e is Failure) return e;
+      if (e is AppException) return UnknownFailure(e.message);
+      return UnknownFailure(e.toString());
+    } catch (_) {
+      return UnknownFailure(e.toString());
     }
-    if (e is Failure) return e;
-    if (e is AppException) return UnknownFailure(e.message);
-    return UnknownFailure(e.toString());
   }
 }

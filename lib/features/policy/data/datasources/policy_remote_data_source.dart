@@ -112,7 +112,9 @@ class PolicyRemoteDataSourceImpl implements PolicyRemoteDataSource {
     };
 
     final response = await dio.put(url, data: payload);
-    if (response.statusCode == 200 || response.statusCode == 204) {
+    if (response.statusCode != null &&
+        response.statusCode! >= 200 &&
+        response.statusCode! < 300) {
       if (response.data != null) {
         if (response.data is Map && response.data['message'] != null) {
           return response.data['message'].toString();

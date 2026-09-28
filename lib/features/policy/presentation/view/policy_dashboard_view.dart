@@ -160,6 +160,7 @@ class _PolicyDashboardContent extends StatelessWidget {
                 message: state.saveError!,
                 type: SnackBarType.failure,
               );
+              context.read<PolicyCubit>().clearSaveError();
             }
           } else if (state is PolicyError) {
             showCustomSnackBar(
@@ -225,6 +226,15 @@ class _PolicyDashboardContent extends StatelessWidget {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            if (Navigator.canPop(context)) ...[
+                              IconButton(
+                                icon: const Icon(Icons.arrow_back_rounded),
+                                tooltip: "Back",
+                                onPressed: () =>
+                                    Navigator.of(context).maybePop(),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,8 +260,8 @@ class _PolicyDashboardContent extends StatelessWidget {
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            _buildLanguageSwitcher(context),
+                            // const SizedBox(width: 8),
+                            // _buildLanguageSwitcher(context),
                           ],
                         ),
                         const SizedBox(height: 10),
@@ -288,8 +298,8 @@ class _PolicyDashboardContent extends StatelessWidget {
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            _buildLanguageSwitcher(context),
+                            // const SizedBox(width: 12),
+                            // _buildLanguageSwitcher(context),
                             const SizedBox(width: 12),
                             _buildSaveButton(state, cubit, context),
                           ],
