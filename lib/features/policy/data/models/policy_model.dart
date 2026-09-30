@@ -73,20 +73,14 @@ class PolicyModel extends PolicyEntity {
   Map<String, dynamic> toJson() {
     return {
       'permissionCode': permissionCode,
-      if (namespace != null) 'namespace': namespace,
-      if (policyId != null) 'policyId': policyId,
       'effect': effect,
       'expressionJson': expressionJson,
       'enabled': enabled,
       'isDeleted': isDeleted,
       'deletedReason': deletedReason,
       'disabledReason': disabledReason,
-      'deprecated': this.deprecated,
       'useCustomRego': useCustomRego,
-      'customRegoSnippet':
-          (customRegoSnippet == null || customRegoSnippet!.isEmpty)
-              ? null
-              : customRegoSnippet,
+      'customRegoSnippet': customRegoSnippet ?? '',
     };
   }
 

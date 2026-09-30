@@ -21,12 +21,12 @@ class MathExpressionWidget extends StatelessWidget {
   });
 
   List<String> get userFieldSuggestions => const [
-        'user.location',
-        'user.department',
-        'user.id',
-        'user.email',
-        'user.roles',
-      ];
+    'user.location',
+    'user.department',
+    'user.id',
+    'user.email',
+    'user.roles',
+  ];
 
   List<String> get numericResourceSuggestions {
     const numericTypes = {
@@ -102,7 +102,9 @@ class MathExpressionWidget extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.75),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.75),
                 ),
               ),
               const Spacer(),
@@ -156,7 +158,7 @@ class MathExpressionWidget extends StatelessWidget {
               label: 'Add math operation',
               button: true,
               child: SizedBox(
-                height: 30,
+                // height: 30,
                 child: AppOutlinedButton(
                   text: '+ Add Math Op',
                   onPressed: _handleAddMathOp,
@@ -233,8 +235,9 @@ class _MathOpRowWidgetState extends State<_MathOpRowWidget> {
         !_focusNode.hasFocus &&
         _textController.text != widget.op.value) {
       _textController.text = widget.op.value;
-      _textController.selection =
-          TextSelection.collapsed(offset: widget.op.value.length);
+      _textController.selection = TextSelection.collapsed(
+        offset: widget.op.value.length,
+      );
     }
   }
 
@@ -310,18 +313,16 @@ class _MathOpRowWidgetState extends State<_MathOpRowWidget> {
             value: '__custom__',
             child: Text(
               'Custom path...',
-              style: TextStyle(
-                fontSize: 12,
-                fontStyle: FontStyle.italic,
-              ),
+              style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
             ),
           ),
         ],
         onChanged: (val) {
           if (val != null && val != '__custom__') {
             _textController.text = val;
-            _textController.selection =
-                TextSelection.collapsed(offset: val.length);
+            _textController.selection = TextSelection.collapsed(
+              offset: val.length,
+            );
             widget.onChanged(widget.op.copyWith(value: val));
           } else if (val == '__custom__') {
             // Keep current value or let user edit custom path
@@ -353,11 +354,7 @@ class _MathOpRowWidgetState extends State<_MathOpRowWidget> {
           if (isNarrow) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                dropdown,
-                const SizedBox(height: 6),
-                customFieldInput,
-              ],
+              children: [dropdown, const SizedBox(height: 6), customFieldInput],
             );
           }
           return Row(
@@ -458,9 +455,7 @@ class _MathOpRowWidgetState extends State<_MathOpRowWidget> {
         onChanged: (val) {
           if (val != null) {
             _textController.clear();
-            widget.onChanged(
-              widget.op.copyWith(operandType: val, value: ''),
-            );
+            widget.onChanged(widget.op.copyWith(operandType: val, value: ''));
           }
         },
       ),
@@ -554,8 +549,9 @@ class _CompareAgainstWidgetState extends State<_CompareAgainstWidget> {
   @override
   void initState() {
     super.initState();
-    _textController =
-        TextEditingController(text: widget.rule.value?.toString() ?? '');
+    _textController = TextEditingController(
+      text: widget.rule.value?.toString() ?? '',
+    );
     _focusNode = FocusNode();
   }
 
@@ -567,8 +563,9 @@ class _CompareAgainstWidgetState extends State<_CompareAgainstWidget> {
         !_focusNode.hasFocus &&
         _textController.text != valStr) {
       _textController.text = valStr;
-      _textController.selection =
-          TextSelection.collapsed(offset: valStr.length);
+      _textController.selection = TextSelection.collapsed(
+        offset: valStr.length,
+      );
     }
   }
 
@@ -644,18 +641,16 @@ class _CompareAgainstWidgetState extends State<_CompareAgainstWidget> {
             value: '__custom__',
             child: Text(
               'Custom path...',
-              style: TextStyle(
-                fontSize: 12,
-                fontStyle: FontStyle.italic,
-              ),
+              style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
             ),
           ),
         ],
         onChanged: (val) {
           if (val != null && val != '__custom__') {
             _textController.text = val;
-            _textController.selection =
-                TextSelection.collapsed(offset: val.length);
+            _textController.selection = TextSelection.collapsed(
+              offset: val.length,
+            );
             widget.onChange(widget.rule.copyWith(value: val));
           } else if (val == '__custom__') {
             widget.onChange(widget.rule.copyWith(value: _textController.text));
@@ -678,18 +673,15 @@ class _CompareAgainstWidgetState extends State<_CompareAgainstWidget> {
               hintText: 'e.g. user.roles',
               validator: (val) => PolicyValidators.validateFieldPath(val),
               autovalidateMode: AutovalidateMode.onUserInteraction,
-              onChanged: (val) => widget.onChange(widget.rule.copyWith(value: val)),
+              onChanged: (val) =>
+                  widget.onChange(widget.rule.copyWith(value: val)),
             ),
           );
 
           if (isNarrow) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                dropdown,
-                const SizedBox(height: 6),
-                customInput,
-              ],
+              children: [dropdown, const SizedBox(height: 6), customInput],
             );
           }
           return Row(
@@ -750,9 +742,7 @@ class _CompareAgainstWidgetState extends State<_CompareAgainstWidget> {
         onChanged: (val) {
           if (val != null && val != widget.rule.compareTo) {
             _textController.clear();
-            widget.onChange(
-              widget.rule.copyWith(compareTo: val, value: ''),
-            );
+            widget.onChange(widget.rule.copyWith(compareTo: val, value: ''));
           }
         },
       ),
