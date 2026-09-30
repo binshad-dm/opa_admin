@@ -29,9 +29,17 @@ abstract class PolicyRemoteDataSource {
 
   Future<List<FieldDefinitionModel>> fetchFields(String permissionCode);
 
-  Future<List<RoleDtoModel>> fetchRoles();
+  Future<List<RoleDtoModel>> fetchRoles({
+    int page = 1,
+    int size = 10,
+    String? search,
+  });
 
-  Future<List<UserDtoModel>> fetchUsers();
+  Future<List<UserDtoModel>> fetchUsers({
+    int page = 1,
+    int size = 10,
+    String? search,
+  });
 
   Future<List<String>> fetchNamespaces(int microservicePort);
 
@@ -226,20 +234,38 @@ class PolicyRemoteDataSourceImpl implements PolicyRemoteDataSource {
   }
 
   @override
-  Future<List<RoleDtoModel>> fetchRoles() async {
+  Future<List<RoleDtoModel>> fetchRoles({
+    int page = 1,
+    int size = 10,
+    String? search,
+  }) async {
     final baseUrl = _getIdentityBaseUrl();
     final url = '$baseUrl${PolicyEndpoints.roles}';
+    final queryParams = <String, dynamic>{
+      'page': page,
+      'size': size,
+      if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+    };
 
     try {
-      final response = await dio.get(url);
+      final response = await dio.get(url, queryParameters: queryParams);
       if (response.statusCode == 200 && response.data != null) {
         final rawData = response.data;
         final List<dynamic> list = rawData is List
             ? rawData
             : (rawData['content'] as List<dynamic>? ?? []);
-        return list
+        var items = list
             .map((e) => RoleDtoModel.fromJson(e as Map<String, dynamic>))
             .toList();
+        if (rawData is List && search != null && search.trim().isNotEmpty) {
+          final q = search.trim().toLowerCase();
+          items = items
+              .where((r) =>
+                  r.name.toLowerCase().contains(q) ||
+                  (r.description?.toLowerCase().contains(q) ?? false))
+              .toList();
+        }
+        return items;
       }
     } catch (_) {}
 
@@ -247,12 +273,27 @@ class PolicyRemoteDataSourceImpl implements PolicyRemoteDataSource {
     try {
       final fallbackUrl =
           '${_getApiBaseUrl('pharmacy')}/internal/authz/subjects?type=ROLE';
-      final response = await dio.get(fallbackUrl);
+      final response = await dio.get(fallbackUrl, queryParameters: queryParams);
       if (response.statusCode == 200 && response.data != null) {
-        final List<dynamic> list = response.data is List ? response.data : [];
-        return list
+        final rawData = response.data;
+        final List<dynamic> list = rawData is List
+            ? rawData
+            : (rawData['content'] as List<dynamic>? ?? []);
+        var items = list
             .map((e) => RoleDtoModel.fromJson(e as Map<String, dynamic>))
             .toList();
+        if (search != null && search.trim().isNotEmpty) {
+          final q = search.trim().toLowerCase();
+          items = items
+              .where((r) =>
+                  r.name.toLowerCase().contains(q) ||
+                  (r.description?.toLowerCase().contains(q) ?? false))
+              .toList();
+        }
+        final startIndex = (page - 1) * size;
+        if (startIndex >= items.length) return [];
+        final endIndex = (startIndex + size).clamp(0, items.length);
+        return items.sublist(startIndex, endIndex);
       }
     } catch (_) {}
 
@@ -260,20 +301,38 @@ class PolicyRemoteDataSourceImpl implements PolicyRemoteDataSource {
   }
 
   @override
-  Future<List<UserDtoModel>> fetchUsers() async {
+  Future<List<UserDtoModel>> fetchUsers({
+    int page = 1,
+    int size = 10,
+    String? search,
+  }) async {
     final baseUrl = _getIdentityBaseUrl();
     final url = '$baseUrl${PolicyEndpoints.users}';
+    final queryParams = <String, dynamic>{
+      'page': page,
+      'size': size,
+      if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+    };
 
     try {
-      final response = await dio.get(url);
+      final response = await dio.get(url, queryParameters: queryParams);
       if (response.statusCode == 200 && response.data != null) {
         final rawData = response.data;
         final List<dynamic> list = rawData is List
             ? rawData
             : (rawData['content'] as List<dynamic>? ?? []);
-        return list
+        var items = list
             .map((e) => UserDtoModel.fromJson(e as Map<String, dynamic>))
             .toList();
+        if (rawData is List && search != null && search.trim().isNotEmpty) {
+          final q = search.trim().toLowerCase();
+          items = items
+              .where((u) =>
+                  u.displayName.toLowerCase().contains(q) ||
+                  u.email.toLowerCase().contains(q))
+              .toList();
+        }
+        return items;
       }
     } catch (_) {}
 
@@ -281,12 +340,27 @@ class PolicyRemoteDataSourceImpl implements PolicyRemoteDataSource {
     try {
       final fallbackUrl =
           '${_getApiBaseUrl('pharmacy')}/internal/authz/subjects?type=USER';
-      final response = await dio.get(fallbackUrl);
+      final response = await dio.get(fallbackUrl, queryParameters: queryParams);
       if (response.statusCode == 200 && response.data != null) {
-        final List<dynamic> list = response.data is List ? response.data : [];
-        return list
+        final rawData = response.data;
+        final List<dynamic> list = rawData is List
+            ? rawData
+            : (rawData['content'] as List<dynamic>? ?? []);
+        var items = list
             .map((e) => UserDtoModel.fromJson(e as Map<String, dynamic>))
             .toList();
+        if (search != null && search.trim().isNotEmpty) {
+          final q = search.trim().toLowerCase();
+          items = items
+              .where((u) =>
+                  u.displayName.toLowerCase().contains(q) ||
+                  u.email.toLowerCase().contains(q))
+              .toList();
+        }
+        final startIndex = (page - 1) * size;
+        if (startIndex >= items.length) return [];
+        final endIndex = (startIndex + size).clamp(0, items.length);
+        return items.sublist(startIndex, endIndex);
       }
     } catch (_) {}
 

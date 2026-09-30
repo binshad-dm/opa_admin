@@ -29,9 +29,17 @@ abstract class PolicyRepository {
     required String permissionCode,
   });
 
-  Future<Either<Failure, List<RoleDtoEntity>>> getRoles();
+  Future<Either<Failure, List<RoleDtoEntity>>> getRoles({
+    int page = 1,
+    int size = 10,
+    String? search,
+  });
 
-  Future<Either<Failure, List<UserDtoEntity>>> getUsers();
+  Future<Either<Failure, List<UserDtoEntity>>> getUsers({
+    int page = 1,
+    int size = 10,
+    String? search,
+  });
 
   Future<Either<Failure, List<String>>> getNamespaces();
 

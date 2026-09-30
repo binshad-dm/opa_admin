@@ -9,7 +9,11 @@ class GetRolesUseCase {
 
   GetRolesUseCase(this.repository);
 
-  Future<Either<Failure, List<RoleDtoEntity>>> call() {
-    return repository.getRoles();
+  Future<Either<Failure, List<RoleDtoEntity>>> call({
+    int page = 1,
+    int size = 10,
+    String? search,
+  }) {
+    return repository.getRoles(page: page, size: size, search: search);
   }
 }

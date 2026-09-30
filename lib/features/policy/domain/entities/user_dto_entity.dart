@@ -23,10 +23,6 @@ class UserDtoEntity extends Equatable {
     return email;
   }
 
-  bool get isActive {
-    return status.toLowerCase() == 'ACTIVE';
-  }
-
   @override
   List<Object?> get props => [id, email, firstName, lastName, status];
 }

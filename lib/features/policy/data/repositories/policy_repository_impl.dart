@@ -82,9 +82,17 @@ class PolicyRepositoryImpl implements PolicyRepository {
   }
 
   @override
-  Future<Either<Failure, List<RoleDtoEntity>>> getRoles() async {
+  Future<Either<Failure, List<RoleDtoEntity>>> getRoles({
+    int page = 1,
+    int size = 10,
+    String? search,
+  }) async {
     try {
-      final roles = await remoteDataSource.fetchRoles();
+      final roles = await remoteDataSource.fetchRoles(
+        page: page,
+        size: size,
+        search: search,
+      );
       return Right(List<RoleDtoEntity>.from(roles));
     } catch (e) {
       return Left(ErrorMapper.from(e));
@@ -92,9 +100,17 @@ class PolicyRepositoryImpl implements PolicyRepository {
   }
 
   @override
-  Future<Either<Failure, List<UserDtoEntity>>> getUsers() async {
+  Future<Either<Failure, List<UserDtoEntity>>> getUsers({
+    int page = 1,
+    int size = 10,
+    String? search,
+  }) async {
     try {
-      final users = await remoteDataSource.fetchUsers();
+      final users = await remoteDataSource.fetchUsers(
+        page: page,
+        size: size,
+        search: search,
+      );
       return Right(List<UserDtoEntity>.from(users));
     } catch (e) {
       return Left(ErrorMapper.from(e));

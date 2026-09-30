@@ -110,11 +110,7 @@ class PolicyCubit extends Cubit<PolicyState> {
     }
   }
 
-  Future<void> loadPolicies({
-    int? page,
-    int? size,
-    String? search,
-  }) async {
+  Future<void> loadPolicies({int? page, int? size, String? search}) async {
     if (state is! PolicyLoaded) return;
     final currentState = state as PolicyLoaded;
 
@@ -149,27 +145,24 @@ class PolicyCubit extends Cubit<PolicyState> {
       search: targetSearch,
     );
 
-    result.fold(
-      (failure) => emit(PolicyError(failure.message)),
-      (paginated) {
-        // Merge any user modifications that were made to policies on this page
-        final mergedItems = paginated.items.map((p) {
-          if (currentState.modifiedPolicies.containsKey(p.permissionCode)) {
-            return currentState.modifiedPolicies[p.permissionCode]!;
-          }
-          return p;
-        }).toList();
+    result.fold((failure) => emit(PolicyError(failure.message)), (paginated) {
+      // Merge any user modifications that were made to policies on this page
+      final mergedItems = paginated.items.map((p) {
+        if (currentState.modifiedPolicies.containsKey(p.permissionCode)) {
+          return currentState.modifiedPolicies[p.permissionCode]!;
+        }
+        return p;
+      }).toList();
 
-        final updatedPaginated = paginated.copyWith(items: mergedItems);
+      final updatedPaginated = paginated.copyWith(items: mergedItems);
 
-        emit(
-          currentState.copyWith(
-            paginatedPolicies: updatedPaginated,
-            searchQuery: targetSearch,
-          ),
-        );
-      },
-    );
+      emit(
+        currentState.copyWith(
+          paginatedPolicies: updatedPaginated,
+          searchQuery: targetSearch,
+        ),
+      );
+    });
   }
 
   void changePage(int newPage) {
@@ -230,6 +223,24 @@ class PolicyCubit extends Cubit<PolicyState> {
     loadPolicies(page: 1, search: '');
   }
 
+  Future<List<RoleDtoEntity>> searchRoles(
+    String query,
+    int page, {
+    int size = 10,
+  }) async {
+    final res = await getRolesUseCase(page: page, size: size, search: query);
+    return res.fold((_) => [], (roles) => roles);
+  }
+
+  Future<List<UserDtoEntity>> searchUsers(
+    String query,
+    int page, {
+    int size = 10,
+  }) async {
+    final res = await getUsersUseCase(page: page, size: size, search: query);
+    return res.fold((_) => [], (users) => users);
+  }
+
   void setSelectedModule(String module) {
     if (state is! PolicyLoaded) return;
     final currentState = state as PolicyLoaded;
@@ -261,16 +272,18 @@ class PolicyCubit extends Cubit<PolicyState> {
       return p;
     }).toList();
 
-    final updatedModified =
-        Map<String, PolicyEntity>.from(currentState.modifiedPolicies);
+    final updatedModified = Map<String, PolicyEntity>.from(
+      currentState.modifiedPolicies,
+    );
     if (targetPolicy != null) {
       updatedModified[permissionCode] = targetPolicy!;
     }
 
     emit(
       currentState.copyWith(
-        paginatedPolicies:
-            currentState.paginatedPolicies.copyWith(items: updatedItems),
+        paginatedPolicies: currentState.paginatedPolicies.copyWith(
+          items: updatedItems,
+        ),
         modifiedPolicies: updatedModified,
       ),
     );
@@ -313,16 +326,18 @@ class PolicyCubit extends Cubit<PolicyState> {
       return p;
     }).toList();
 
-    final updatedModified =
-        Map<String, PolicyEntity>.from(currentState.modifiedPolicies);
+    final updatedModified = Map<String, PolicyEntity>.from(
+      currentState.modifiedPolicies,
+    );
     if (targetPolicy != null) {
       updatedModified[permissionCode] = targetPolicy!;
     }
 
     emit(
       currentState.copyWith(
-        paginatedPolicies:
-            currentState.paginatedPolicies.copyWith(items: updatedItems),
+        paginatedPolicies: currentState.paginatedPolicies.copyWith(
+          items: updatedItems,
+        ),
         modifiedPolicies: updatedModified,
         clearActivePermission: true,
       ),
@@ -363,19 +378,18 @@ class PolicyCubit extends Cubit<PolicyState> {
 
       return result.fold(
         (failure) {
-          final latestState =
-              state is PolicyLoaded ? (state as PolicyLoaded) : currentState;
+          final latestState = state is PolicyLoaded
+              ? (state as PolicyLoaded)
+              : currentState;
           emit(
-            latestState.copyWith(
-              isSaving: false,
-              saveError: failure.message,
-            ),
+            latestState.copyWith(isSaving: false, saveError: failure.message),
           );
           return null;
         },
         (message) {
-          final latestState =
-              state is PolicyLoaded ? (state as PolicyLoaded) : currentState;
+          final latestState = state is PolicyLoaded
+              ? (state as PolicyLoaded)
+              : currentState;
           emit(
             latestState.copyWith(
               isSaving: false,
@@ -388,14 +402,10 @@ class PolicyCubit extends Cubit<PolicyState> {
         },
       );
     } catch (e) {
-      final latestState =
-          state is PolicyLoaded ? (state as PolicyLoaded) : currentState;
-      emit(
-        latestState.copyWith(
-          isSaving: false,
-          saveError: e.toString(),
-        ),
-      );
+      final latestState = state is PolicyLoaded
+          ? (state as PolicyLoaded)
+          : currentState;
+      emit(latestState.copyWith(isSaving: false, saveError: e.toString()));
       return null;
     }
   }

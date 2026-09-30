@@ -86,12 +86,20 @@ class MockPolicyRepository implements PolicyRepository {
   }
 
   @override
-  Future<Either<Failure, List<RoleDtoEntity>>> getRoles() async {
-    return const Right([RoleDtoEntity(id: 'ADMIN', name: 'Admin')]);
+  Future<Either<Failure, List<RoleDtoEntity>>> getRoles({
+    int page = 1,
+    int size = 10,
+    String? search,
+  }) async {
+    return const Right([RoleDtoEntity(id: 'ADMIN', name: 'Admin', status: 'ACTIVE')]);
   }
 
   @override
-  Future<Either<Failure, List<UserDtoEntity>>> getUsers() async {
+  Future<Either<Failure, List<UserDtoEntity>>> getUsers({
+    int page = 1,
+    int size = 10,
+    String? search,
+  }) async {
     return const Right([]);
   }
 
