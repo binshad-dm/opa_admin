@@ -24,7 +24,11 @@ class PolicyValidators {
   }
 
   /// Validates comma-separated array items for `in` and `not_in` comparisons.
-  static String? validateArrayValues(String? value, {bool isNumeric = false}) {
+  static String? validateArrayValues(
+    String? value, {
+    bool isNumeric = false,
+    bool isAge = false,
+  }) {
     if (value == null || value.trim().isEmpty) {
       return 'At least one value is required';
     }
@@ -38,7 +42,12 @@ class PolicyValidators {
       return 'At least one non-empty value is required';
     }
 
-    if (isNumeric) {
+    if (isAge) {
+      for (final item in items) {
+        final ageErr = validateAge(item, 'All age values');
+        if (ageErr != null) return ageErr;
+      }
+    } else if (isNumeric) {
       for (final item in items) {
         if (num.tryParse(item) == null) {
           return 'All values must be valid numbers (e.g. 10, 20)';
@@ -48,12 +57,43 @@ class PolicyValidators {
     return null;
   }
 
-  /// Validates numeric inputs.
-  static String? validateNumber(String? value, [String fieldName = 'Number']) {
+  /// Validates age inputs (positive whole numbers / integers, no negatives, no decimals).
+  static String? validateAge(String? value, [String fieldName = 'Age']) {
     if (value == null || value.trim().isEmpty) {
       return '$fieldName value is required';
     }
-    if (num.tryParse(value.trim()) == null) {
+    final trimmed = value.trim();
+    if (trimmed.startsWith('-') || trimmed.contains('-')) {
+      return '$fieldName cannot be negative';
+    }
+    if (trimmed.contains('.')) {
+      return '$fieldName cannot contain decimals';
+    }
+    final parsed = int.tryParse(trimmed);
+    if (parsed == null || parsed < 0) {
+      return '$fieldName must be a valid non-negative whole number';
+    }
+    return null;
+  }
+
+  /// Validates numeric inputs.
+  static String? validateNumber(
+    String? value, [
+    String fieldName = 'Number',
+    bool allowNegative = true,
+    bool allowDecimal = true,
+  ]) {
+    if (value == null || value.trim().isEmpty) {
+      return '$fieldName value is required';
+    }
+    final trimmed = value.trim();
+    if (!allowNegative && (trimmed.startsWith('-') || trimmed.contains('-'))) {
+      return '$fieldName cannot be negative';
+    }
+    if (!allowDecimal && trimmed.contains('.')) {
+      return '$fieldName cannot contain decimals';
+    }
+    if (num.tryParse(trimmed) == null) {
       return 'Enter a valid number';
     }
     return null;

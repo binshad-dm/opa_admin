@@ -181,22 +181,52 @@ class ConditionBuilderCubit extends Cubit<ConditionBuilderState> {
             if (val.isEmpty || val.every((e) => e.toString().trim().isEmpty)) {
               return 'At least one value is required for "${fieldDef?.displayName ?? current.field}".';
             }
+            final isAge =
+                (fieldDef?.fieldName.toLowerCase().contains('age') ?? false) ||
+                (fieldDef?.displayName.toLowerCase().contains('age') ?? false);
             if (isNum) {
               for (final item in val) {
-                if (num.tryParse(item.toString().trim()) == null) {
+                if (isAge) {
+                  final ageErr = PolicyValidators.validateAge(
+                    item.toString().trim(),
+                    fieldDef?.displayName ?? 'Patient Age',
+                  );
+                  if (ageErr != null) return ageErr;
+                } else if (num.tryParse(item.toString().trim()) == null) {
                   return 'All values for "${fieldDef?.displayName ?? current.field}" must be valid numbers.';
                 }
               }
             }
           } else {
-            final arrErr = PolicyValidators.validateArrayValues(val?.toString(), isNumeric: isNum);
+            final isAge =
+                (fieldDef?.fieldName.toLowerCase().contains('age') ?? false) ||
+                (fieldDef?.displayName.toLowerCase().contains('age') ?? false);
+            final arrErr = PolicyValidators.validateArrayValues(
+              val?.toString(),
+              isNumeric: isNum,
+              isAge: isAge,
+            );
             if (arrErr != null) {
               return 'Values for "${fieldDef?.displayName ?? current.field}": $arrErr';
             }
           }
         } else if (fieldDef?.fieldType == 'NUMBER') {
-          final numErr = PolicyValidators.validateNumber(val?.toString(), fieldDef?.displayName ?? 'Number');
-          if (numErr != null) return numErr;
+          final isAge =
+              (fieldDef?.fieldName.toLowerCase().contains('age') ?? false) ||
+              (fieldDef?.displayName.toLowerCase().contains('age') ?? false);
+          if (isAge) {
+            final ageErr = PolicyValidators.validateAge(
+              val?.toString(),
+              fieldDef?.displayName ?? 'Patient Age',
+            );
+            if (ageErr != null) return ageErr;
+          } else {
+            final numErr = PolicyValidators.validateNumber(
+              val?.toString(),
+              fieldDef?.displayName ?? 'Number',
+            );
+            if (numErr != null) return numErr;
+          }
         } else if (fieldDef?.fieldType == 'BOOLEAN') {
           if (val != true && val != false) {
             return 'Select a boolean value for "${fieldDef?.displayName ?? current.field}".';

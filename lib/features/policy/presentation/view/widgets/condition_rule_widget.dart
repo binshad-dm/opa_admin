@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../../../core/design/widgets/app_dropdown_field.dart';
 import '../../../../../core/design/widgets/app_text_form_field.dart';
@@ -7,7 +8,7 @@ import '../../../domain/entities/field_definition_entity.dart';
 import '../../../domain/utils/policy_validators.dart';
 import 'dynamic_dropdown_widget.dart';
 
-class ConditionRuleWidget extends StatelessWidget {
+class ConditionRuleWidget extends StatefulWidget {
   final ConditionRuleEntity rule;
   final List<FieldDefinitionEntity> fields;
   final String permissionCode;
@@ -23,12 +24,26 @@ class ConditionRuleWidget extends StatelessWidget {
     required this.onRemove,
   });
 
+  @override
+  State<ConditionRuleWidget> createState() => _ConditionRuleWidgetState();
+}
+
+class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
+  late final TextEditingController _textController;
+  late final FocusNode _textFocusNode;
+
   FieldDefinitionEntity? get selectedField {
     try {
-      return fields.firstWhere((f) => f.fieldName == rule.field);
+      return widget.fields.firstWhere((f) => f.fieldName == widget.rule.field);
     } catch (_) {
       return null;
     }
+  }
+
+  bool get isAgeField {
+    final name = (selectedField?.fieldName ?? widget.rule.field).toLowerCase();
+    final display = (selectedField?.displayName ?? '').toLowerCase();
+    return name.contains('age') || display.contains('age');
   }
 
   List<String> get userFieldSuggestions => const [
@@ -39,7 +54,7 @@ class ConditionRuleWidget extends StatelessWidget {
         'user.roles',
       ];
 
-  List<String> get resourceFieldSuggestions => fields
+  List<String> get resourceFieldSuggestions => widget.fields
       .map(
         (f) => f.fieldName.startsWith('resource.')
             ? f.fieldName
@@ -52,56 +67,135 @@ class ConditionRuleWidget extends StatelessWidget {
         ...resourceFieldSuggestions,
       ];
 
-  void _handleValueTypeChange(String? newType) {
-    if (newType == null || newType == rule.valueType) return;
-    dynamic newVal = rule.value;
-    if (newType == 'FIELD' || newType == 'FIELD_LIST') {
-      newVal = rule.value is String ? rule.value : '';
-    } else if (newType == 'VALUE') {
-      final isArray = rule.comparison == 'in' || rule.comparison == 'not_in';
-      if (isArray && newVal is! List) {
-        newVal = (newVal != null && newVal.toString().isNotEmpty)
-            ? [newVal.toString()]
-            : [];
-      } else if (!isArray && newVal is List) {
-        newVal = newVal.isNotEmpty ? newVal.first : '';
+  String _formatValueForText(dynamic val, [ConditionRuleEntity? currentRule]) {
+    final r = currentRule ?? widget.rule;
+    if (r.valueType == 'FIELD' || r.valueType == 'FIELD_LIST') {
+      return val is String ? val : '';
+    }
+    final isArray = r.comparison == 'in' || r.comparison == 'not_in';
+    if (isArray) {
+      if (val is List) {
+        return val.join(', ');
+      }
+      return val?.toString() ?? '';
+    }
+    return val?.toString() ?? '';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _textController = TextEditingController(
+      text: _formatValueForText(widget.rule.value),
+    );
+    _textFocusNode = FocusNode();
+  }
+
+  @override
+  void didUpdateWidget(ConditionRuleWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final typeChanged = oldWidget.rule.valueType != widget.rule.valueType;
+    final fieldChanged = oldWidget.rule.field != widget.rule.field;
+    final compChanged = oldWidget.rule.comparison != widget.rule.comparison;
+
+    if (typeChanged || fieldChanged || compChanged) {
+      final newText = _formatValueForText(widget.rule.value);
+      if (_textController.text != newText) {
+        _textController.text = newText;
+        _textController.selection =
+            TextSelection.collapsed(offset: newText.length);
+      }
+    } else {
+      final expectedText = _formatValueForText(widget.rule.value);
+      if (!_textFocusNode.hasFocus && _textController.text != expectedText) {
+        _textController.text = expectedText;
+        _textController.selection =
+            TextSelection.collapsed(offset: expectedText.length);
       }
     }
-    onChange(rule.copyWith(valueType: newType, value: newVal));
+  }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    _textFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _handleValueTypeChange(String? newType) {
+    if (newType == null || newType == widget.rule.valueType) return;
+    dynamic newVal = '';
+    final isArray =
+        widget.rule.comparison == 'in' || widget.rule.comparison == 'not_in';
+
+    if (newType == 'FIELD' || newType == 'FIELD_LIST') {
+      if (widget.rule.valueType == 'FIELD' ||
+          widget.rule.valueType == 'FIELD_LIST') {
+        newVal = widget.rule.value is String ? widget.rule.value : '';
+      } else {
+        // Reset when switching from Static Value to Field/Field List
+        newVal = '';
+      }
+    } else if (newType == 'VALUE') {
+      // Switching to Static Value: reset to clear any field path (e.g. resource.allowedDepartments)
+      if (isArray) {
+        newVal = <String>[];
+      } else if (selectedField?.fieldType == 'BOOLEAN') {
+        newVal = true;
+      } else if (selectedField?.allowedValues != null &&
+          selectedField!.allowedValues!.isNotEmpty) {
+        newVal = selectedField!.allowedValues!.first;
+      } else {
+        newVal = '';
+      }
+    }
+
+    final updatedRule = widget.rule.copyWith(valueType: newType, value: newVal);
+    final newText = _formatValueForText(newVal, updatedRule);
+    _textController.text = newText;
+    _textController.selection = TextSelection.collapsed(offset: newText.length);
+    widget.onChange(updatedRule);
   }
 
   void _handleFieldChange(String? newFieldName) {
     if (newFieldName == null) return;
     FieldDefinitionEntity? newField;
     try {
-      newField = fields.firstWhere((f) => f.fieldName == newFieldName);
+      newField = widget.fields.firstWhere((f) => f.fieldName == newFieldName);
     } catch (_) {}
 
-    dynamic defaultValue = rule.value;
-    if (rule.valueType == 'VALUE') {
-      defaultValue = '';
-      if (newField?.fieldType == 'BOOLEAN') {
+    dynamic defaultValue = widget.rule.value;
+    if (widget.rule.valueType == 'VALUE') {
+      final isArray =
+          widget.rule.comparison == 'in' || widget.rule.comparison == 'not_in';
+      if (isArray) {
+        defaultValue = <String>[];
+      } else if (newField?.fieldType == 'BOOLEAN') {
         defaultValue = true;
       } else if (newField?.allowedValues != null &&
           newField!.allowedValues!.isNotEmpty) {
         defaultValue = newField.allowedValues!.first;
+      } else {
+        defaultValue = '';
       }
     }
 
-    onChange(
-      rule.copyWith(
-        field: newFieldName,
-        value: defaultValue,
-        valueType: rule.valueType,
-      ),
+    final updatedRule = widget.rule.copyWith(
+      field: newFieldName,
+      value: defaultValue,
+      valueType: widget.rule.valueType,
     );
+    final newText = _formatValueForText(defaultValue, updatedRule);
+    _textController.text = newText;
+    _textController.selection = TextSelection.collapsed(offset: newText.length);
+    widget.onChange(updatedRule);
   }
 
   void _handleComparisonChange(String? val) {
     if (val == null) return;
     final isArray =
-        (val == 'in' || val == 'not_in') && rule.valueType == 'VALUE';
-    dynamic newVal = rule.value;
+        (val == 'in' || val == 'not_in') && widget.rule.valueType == 'VALUE';
+    dynamic newVal = widget.rule.value;
     if (isArray && newVal is! List) {
       newVal = newVal != null && newVal.toString().isNotEmpty
           ? [newVal.toString()]
@@ -110,13 +204,15 @@ class ConditionRuleWidget extends StatelessWidget {
     if (!isArray && newVal is List) {
       newVal = newVal.isNotEmpty ? newVal.first : '';
     }
-    onChange(
-      rule.copyWith(
-        comparison: val,
-        value: newVal,
-        valueType: rule.valueType,
-      ),
+    final updatedRule = widget.rule.copyWith(
+      comparison: val,
+      value: newVal,
+      valueType: widget.rule.valueType,
     );
+    final newText = _formatValueForText(newVal, updatedRule);
+    _textController.text = newText;
+    _textController.selection = TextSelection.collapsed(offset: newText.length);
+    widget.onChange(updatedRule);
   }
 
   Widget _buildFieldDropdown(
@@ -144,8 +240,8 @@ class ConditionRuleWidget extends StatelessWidget {
       label: 'Rule comparison operator',
       button: true,
       child: AppDropdownField<String>(
-        value: compOptions.contains(rule.comparison)
-            ? rule.comparison
+        value: compOptions.contains(widget.rule.comparison)
+            ? widget.rule.comparison
             : '==',
         items: compDropdownItems,
         onChanged: _handleComparisonChange,
@@ -161,7 +257,7 @@ class ConditionRuleWidget extends StatelessWidget {
       label: 'Rule value type',
       button: true,
       child: AppDropdownField<String>(
-        value: rule.valueType,
+        value: widget.rule.valueType,
         items: valueTypeDropdownItems,
         onChanged: _handleValueTypeChange,
       ),
@@ -181,15 +277,17 @@ class ConditionRuleWidget extends StatelessWidget {
           color: Colors.redAccent,
         ),
         tooltip: 'Remove rule',
-        onPressed: onRemove,
+        onPressed: widget.onRemove,
       ),
     );
   }
 
   Widget _buildValueInput() {
-    if (rule.valueType == 'FIELD' || rule.valueType == 'FIELD_LIST') {
+    if (widget.rule.valueType == 'FIELD' ||
+        widget.rule.valueType == 'FIELD_LIST') {
       final suggestions = allSuggestions;
-      final currentStr = rule.value is String ? rule.value as String : '';
+      final currentStr =
+          widget.rule.value is String ? widget.rule.value as String : '';
       final isKnown = suggestions.contains(currentStr);
       final dropdownVal = isKnown
           ? currentStr
@@ -241,7 +339,10 @@ class ConditionRuleWidget extends StatelessWidget {
                 ],
                 onChanged: (val) {
                   if (val != null && val != '__custom__') {
-                    onChange(rule.copyWith(value: val));
+                    _textController.text = val;
+                    _textController.selection =
+                        TextSelection.collapsed(offset: val.length);
+                    widget.onChange(widget.rule.copyWith(value: val));
                   }
                 },
               ),
@@ -253,15 +354,17 @@ class ConditionRuleWidget extends StatelessWidget {
               textField: true,
               child: AppTextFormField(
                 key: ValueKey(
-                  'field_path_${rule.field}_${rule.valueType}_${rule.value}',
+                  'field_path_${widget.rule.field}_${widget.rule.valueType}',
                 ),
-                hintText: rule.valueType == 'FIELD'
+                controller: _textController,
+                focusNode: _textFocusNode,
+                hintText: widget.rule.valueType == 'FIELD'
                     ? 'e.g. user.location'
                     : 'e.g. resource.allowedDepartments',
-                initialValue: currentStr,
                 validator: (val) => PolicyValidators.validateFieldPath(val),
                 autovalidateMode: AutovalidateMode.onUserInteraction,
-                onChanged: (val) => onChange(rule.copyWith(value: val)),
+                onChanged: (val) =>
+                    widget.onChange(widget.rule.copyWith(value: val)),
               ),
             );
 
@@ -288,24 +391,35 @@ class ConditionRuleWidget extends StatelessWidget {
       );
     }
 
-    final isArrayOp = rule.comparison == 'in' || rule.comparison == 'not_in';
+    final isArrayOp =
+        widget.rule.comparison == 'in' || widget.rule.comparison == 'not_in';
 
     if (isArrayOp) {
-      final displayValue = rule.value is List
-          ? (rule.value as List).join(', ')
-          : (rule.value?.toString() ?? '');
       return Expanded(
         child: Semantics(
           identifier: 'condition_rule_array_value_text_field',
           label: 'Comma-separated values',
           textField: true,
           child: AppTextFormField(
-            key: ValueKey('array_${rule.field}_${rule.value}'),
-            hintText: 'value1, value2...',
-            initialValue: displayValue,
+            key: ValueKey('array_${widget.rule.field}_${widget.rule.valueType}'),
+            controller: _textController,
+            focusNode: _textFocusNode,
+            keyboardType: isAgeField
+                ? TextInputType.number
+                : (selectedField?.fieldType == 'NUMBER'
+                    ? const TextInputType.numberWithOptions(
+                        decimal: true,
+                        signed: true,
+                      )
+                    : TextInputType.text),
+            inputFormatters: isAgeField
+                ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9,\s]'))]
+                : null,
+            hintText: isAgeField ? 'e.g. 18, 25, 60' : 'value1, value2...',
             validator: (val) => PolicyValidators.validateArrayValues(
               val,
               isNumeric: selectedField?.fieldType == 'NUMBER',
+              isAge: isAgeField,
             ),
             autovalidateMode: AutovalidateMode.onUserInteraction,
             onChanged: (val) {
@@ -313,8 +427,9 @@ class ConditionRuleWidget extends StatelessWidget {
                   .split(',')
                   .map((s) => s.trim())
                   .where((s) => s.isNotEmpty)
+                  .map((s) => isAgeField ? (int.tryParse(s) ?? s) : s)
                   .toList();
-              onChange(rule.copyWith(value: arr));
+              widget.onChange(widget.rule.copyWith(value: arr));
             },
           ),
         ),
@@ -329,12 +444,14 @@ class ConditionRuleWidget extends StatelessWidget {
           label: 'Rule value',
           textField: true,
           child: AppTextFormField(
-            key: ValueKey('val_${rule.field}_${rule.value}'),
+            key: ValueKey('val_${widget.rule.field}_${widget.rule.valueType}'),
+            controller: _textController,
+            focusNode: _textFocusNode,
             hintText: 'Value...',
-            initialValue: rule.value?.toString() ?? '',
             validator: (val) => PolicyValidators.validateRequired(val, 'Value'),
             autovalidateMode: AutovalidateMode.onUserInteraction,
-            onChanged: (val) => onChange(rule.copyWith(value: val)),
+            onChanged: (val) =>
+                widget.onChange(widget.rule.copyWith(value: val)),
           ),
         ),
       );
@@ -343,9 +460,12 @@ class ConditionRuleWidget extends StatelessWidget {
     if (field.optionsEndpoint != null && field.optionsEndpoint!.isNotEmpty) {
       return DynamicDropdownWidget(
         endpoint: field.optionsEndpoint!,
-        permissionCode: permissionCode,
-        value: rule.value,
-        onChange: (val) => onChange(rule.copyWith(value: val)),
+        permissionCode: widget.permissionCode,
+        value: widget.rule.value,
+        onChange: (val) {
+          _textController.text = val;
+          widget.onChange(widget.rule.copyWith(value: val));
+        },
       );
     }
 
@@ -358,9 +478,10 @@ class ConditionRuleWidget extends StatelessWidget {
             ),
           )
           .toList();
-      final currentVal = items.any((i) => i.value == rule.value?.toString())
-          ? rule.value?.toString()
-          : null;
+      final currentVal =
+          items.any((i) => i.value == widget.rule.value?.toString())
+              ? widget.rule.value?.toString()
+              : null;
 
       return Expanded(
         child: Semantics(
@@ -371,14 +492,19 @@ class ConditionRuleWidget extends StatelessWidget {
             value: currentVal,
             hintText: 'Select value...',
             items: items,
-            onChanged: (val) => onChange(rule.copyWith(value: val)),
+            onChanged: (val) {
+              if (val != null) {
+                _textController.text = val;
+                widget.onChange(widget.rule.copyWith(value: val));
+              }
+            },
           ),
         ),
       );
     }
 
     if (field.fieldType == 'BOOLEAN') {
-      final valStr = rule.value?.toString();
+      final valStr = widget.rule.value?.toString();
       return Expanded(
         child: Align(
           alignment: Alignment.centerLeft,
@@ -401,8 +527,10 @@ class ConditionRuleWidget extends StatelessWidget {
                     child: Text('False', style: TextStyle(fontSize: 13)),
                   ),
                 ],
-                onChanged: (val) =>
-                    onChange(rule.copyWith(value: val == 'true')),
+                onChanged: (val) {
+                  _textController.text = val ?? '';
+                  widget.onChange(widget.rule.copyWith(value: val == 'true'));
+                },
               ),
             ),
           ),
@@ -417,17 +545,48 @@ class ConditionRuleWidget extends StatelessWidget {
           label: 'Numeric value for ${field.displayName}',
           textField: true,
           child: AppTextFormField(
-            key: ValueKey('num_${rule.field}_${rule.value}'),
-            keyboardType: TextInputType.number,
-            hintText: 'Value...',
-            initialValue: rule.value?.toString() ?? '',
-            validator: (val) => PolicyValidators.validateNumber(
-              val,
-              field.displayName,
-            ),
+            key: ValueKey('num_${widget.rule.field}_${widget.rule.valueType}'),
+            controller: _textController,
+            focusNode: _textFocusNode,
+            keyboardType: isAgeField
+                ? TextInputType.number
+                : const TextInputType.numberWithOptions(
+                    decimal: true,
+                    signed: true,
+                  ),
+            inputFormatters: isAgeField
+                ? [FilteringTextInputFormatter.digitsOnly]
+                : [
+                    FilteringTextInputFormatter.allow(
+                      RegExp(r'^-?[0-9]*\.?[0-9]*'),
+                    ),
+                  ],
+            hintText: isAgeField ? 'e.g. 25' : 'Value...',
+            validator: (val) {
+              if (isAgeField) {
+                return PolicyValidators.validateAge(
+                  val,
+                  field.displayName,
+                );
+              }
+              return PolicyValidators.validateNumber(
+                val,
+                field.displayName,
+              );
+            },
             autovalidateMode: AutovalidateMode.onUserInteraction,
-            onChanged: (val) =>
-                onChange(rule.copyWith(value: num.tryParse(val) ?? val)),
+            onChanged: (val) {
+              if (isAgeField) {
+                final parsed = int.tryParse(val);
+                widget.onChange(
+                  widget.rule.copyWith(value: parsed ?? val),
+                );
+              } else {
+                widget.onChange(
+                  widget.rule.copyWith(value: num.tryParse(val) ?? val),
+                );
+              }
+            },
           ),
         ),
       );
@@ -439,15 +598,17 @@ class ConditionRuleWidget extends StatelessWidget {
         label: 'Value for ${field.displayName}',
         textField: true,
         child: AppTextFormField(
-          key: ValueKey('text_${rule.field}_${rule.value}'),
+          key: ValueKey('text_${widget.rule.field}_${widget.rule.valueType}'),
+          controller: _textController,
+          focusNode: _textFocusNode,
           hintText: 'Value...',
-          initialValue: rule.value?.toString() ?? '',
           validator: (val) => PolicyValidators.validateRequired(
             val,
             field.displayName,
           ),
           autovalidateMode: AutovalidateMode.onUserInteraction,
-          onChanged: (val) => onChange(rule.copyWith(value: val)),
+          onChanged: (val) =>
+              widget.onChange(widget.rule.copyWith(value: val)),
         ),
       ),
     );
@@ -455,7 +616,7 @@ class ConditionRuleWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fieldItems = fields
+    final fieldItems = widget.fields
         .map(
           (f) => DropdownMenuItem<String>(
             value: f.fieldName,
@@ -468,8 +629,8 @@ class ConditionRuleWidget extends StatelessWidget {
         )
         .toList();
 
-    final currentField = fieldItems.any((i) => i.value == rule.field)
-        ? rule.field
+    final currentField = fieldItems.any((i) => i.value == widget.rule.field)
+        ? widget.rule.field
         : (fieldItems.isNotEmpty ? fieldItems.first.value : null);
 
     const compOptions = [

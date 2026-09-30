@@ -205,6 +205,7 @@ class ConditionGroupWidget extends StatelessWidget {
           // Render Rules
           for (final item in rules)
             ConditionRuleWidget(
+              key: ValueKey('rule_${item.key}'),
               rule: item.value,
               fields: fields,
               permissionCode: permissionCode,
