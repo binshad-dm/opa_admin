@@ -47,12 +47,31 @@ class PolicyCubit extends Cubit<PolicyState> {
     });
 
     String subjectType = 'ROLE';
-    String subjectId = roles.isNotEmpty ? roles.first.id : '';
+    String subjectId = '';
+    final activeRoles = roles
+        .where((r) =>
+            r.status.isEmpty ||
+            r.status == 'null' ||
+            r.status.toLowerCase() == 'active')
+        .toList();
+    if (activeRoles.isNotEmpty) {
+      subjectId = activeRoles.first.id;
+    } else if (roles.isNotEmpty) {
+      subjectId = roles.first.id;
+    }
+
     String moduleName = modules.isNotEmpty ? modules.first : 'finance';
 
     if (subjectId.isEmpty && users.isNotEmpty) {
+      final activeUsers = users
+          .where((u) =>
+              u.status.isEmpty ||
+              u.status == 'null' ||
+              u.status.toLowerCase() == 'active')
+          .toList();
       subjectType = 'USER';
-      subjectId = users.first.id;
+      subjectId =
+          activeUsers.isNotEmpty ? activeUsers.first.id : users.first.id;
     }
 
     if (subjectId.isNotEmpty) {
@@ -192,10 +211,30 @@ class PolicyCubit extends Cubit<PolicyState> {
     final currentState = state as PolicyLoaded;
 
     String newSubjectId = '';
-    if (newType == 'ROLE' && currentState.roles.isNotEmpty) {
-      newSubjectId = currentState.roles.first.id;
-    } else if (newType == 'USER' && currentState.users.isNotEmpty) {
-      newSubjectId = currentState.users.first.id;
+    if (newType == 'ROLE') {
+      final activeRoles = currentState.roles
+          .where((r) =>
+              r.status.isEmpty ||
+              r.status == 'null' ||
+              r.status.toLowerCase() == 'active')
+          .toList();
+      if (activeRoles.isNotEmpty) {
+        newSubjectId = activeRoles.first.id;
+      } else if (currentState.roles.isNotEmpty) {
+        newSubjectId = currentState.roles.first.id;
+      }
+    } else if (newType == 'USER') {
+      final activeUsers = currentState.users
+          .where((u) =>
+              u.status.isEmpty ||
+              u.status == 'null' ||
+              u.status.toLowerCase() == 'active')
+          .toList();
+      if (activeUsers.isNotEmpty) {
+        newSubjectId = activeUsers.first.id;
+      } else if (currentState.users.isNotEmpty) {
+        newSubjectId = currentState.users.first.id;
+      }
     }
 
     emit(

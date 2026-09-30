@@ -30,10 +30,19 @@ class SubjectSelectorWidget extends StatelessWidget {
 
     List<DropdownMenuItem<String>> items = [];
     if (isRole) {
-      items = roles
-          .where((r) => r.status == "ACTIVE")
-          .map(
-            (r) => DropdownMenuItem<String>(
+      final activeRoles = roles
+          .where((r) =>
+              r.status.isEmpty ||
+              r.status == 'null' ||
+              r.status.toLowerCase() == 'active')
+          .toList();
+      final listToUse = activeRoles.isNotEmpty ? activeRoles : roles;
+
+      final seen = <String>{};
+      for (final r in listToUse) {
+        if (r.id.isNotEmpty && seen.add(r.id)) {
+          items.add(
+            DropdownMenuItem<String>(
               value: r.id,
               child: Text(
                 r.name,
@@ -41,13 +50,23 @@ class SubjectSelectorWidget extends StatelessWidget {
                 style: const TextStyle(fontSize: 13),
               ),
             ),
-          )
-          .toList();
+          );
+        }
+      }
     } else {
-      items = users
-          .where((u) => u.status == "ACTIVE")
-          .map(
-            (u) => DropdownMenuItem<String>(
+      final activeUsers = users
+          .where((u) =>
+              u.status.isEmpty ||
+              u.status == 'null' ||
+              u.status.toLowerCase() == 'active')
+          .toList();
+      final listToUse = activeUsers.isNotEmpty ? activeUsers : users;
+
+      final seen = <String>{};
+      for (final u in listToUse) {
+        if (u.id.isNotEmpty && seen.add(u.id)) {
+          items.add(
+            DropdownMenuItem<String>(
               value: u.id,
               child: Text(
                 u.displayName,
@@ -55,13 +74,14 @@ class SubjectSelectorWidget extends StatelessWidget {
                 style: const TextStyle(fontSize: 13),
               ),
             ),
-          )
-          .toList();
+          );
+        }
+      }
     }
 
     final validValue = items.any((i) => i.value == subjectId)
         ? subjectId
-        : null;
+        : (items.isNotEmpty && subjectId.isEmpty ? items.first.value : null);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -98,6 +118,7 @@ class SubjectSelectorWidget extends StatelessWidget {
               'Select ${isRole ? "role" : "user"} to view and manage policies',
           button: true,
           child: AppDropdownField<String>(
+            key: ValueKey('subject_dropdown_${subjectType}_${validValue ?? ""}'),
             label: 'Subject',
             value: validValue,
             hintText: isLoading ? 'Loading subjects...' : 'Select Subject...',

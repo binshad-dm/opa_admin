@@ -13,7 +13,7 @@ class RoleDtoModel extends RoleDtoEntity {
       id: (json['id'] ?? json['subjectId'] ?? json['name'] ?? '').toString(),
       name: (json['name'] ?? json['subjectName'] ?? json['displayName'] ?? '')
           .toString(),
-      status: (json['status']).toString(),
+      status: (json['status'] ?? 'ACTIVE').toString(),
       description: json['description'] as String?,
     );
   }

@@ -53,6 +53,7 @@ class AppDropdownField<T> extends StatelessWidget {
           const Gap(4),
         ],
         DropdownButtonFormField<T>(
+          key: ValueKey(value),
           value: value,
           items: items,
           onChanged: readOnly ? null : onChanged,
