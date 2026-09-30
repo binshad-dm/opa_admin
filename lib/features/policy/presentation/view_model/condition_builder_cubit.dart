@@ -10,12 +10,14 @@ import 'condition_builder_state.dart';
 class ConditionBuilderCubit extends Cubit<ConditionBuilderState> {
   final GetFieldsUseCase getFieldsUseCase;
 
-  ConditionBuilderCubit({
-    required this.getFieldsUseCase,
-  }) : super(const ConditionBuilderState(permissionCode: ''));
+  ConditionBuilderCubit({required this.getFieldsUseCase})
+    : super(const ConditionBuilderState(permissionCode: ''));
 
   void init(String permissionCode, PolicyEntity? policy) {
-    ConditionGroupEntity tree = const ConditionGroupEntity(operator: 'AND', children: []);
+    ConditionGroupEntity tree = const ConditionGroupEntity(
+      operator: 'AND',
+      children: [],
+    );
 
     if (policy?.expressionJson != null && policy!.expressionJson!.isNotEmpty) {
       try {
@@ -28,13 +30,15 @@ class ConditionBuilderCubit extends Cubit<ConditionBuilderState> {
       } catch (_) {}
     }
 
-    emit(ConditionBuilderState(
-      permissionCode: permissionCode,
-      useCustomRego: policy?.useCustomRego ?? false,
-      customRegoSnippet: policy?.customRegoSnippet ?? '',
-      expressionTree: tree,
-      isLoadingFields: true,
-    ));
+    emit(
+      ConditionBuilderState(
+        permissionCode: permissionCode,
+        useCustomRego: policy?.useCustomRego ?? false,
+        customRegoSnippet: policy?.customRegoSnippet ?? '',
+        expressionTree: tree,
+        isLoadingFields: true,
+      ),
+    );
 
     loadFields(permissionCode);
   }
@@ -42,14 +46,14 @@ class ConditionBuilderCubit extends Cubit<ConditionBuilderState> {
   Future<void> loadFields(String permissionCode) async {
     final result = await getFieldsUseCase(permissionCode);
     result.fold(
-      (failure) => emit(state.copyWith(
-        isLoadingFields: false,
-        error: failure.message,
-      )),
-      (fields) => emit(state.copyWith(
-        fields: List<FieldDefinitionEntity>.from(fields),
-        isLoadingFields: false,
-      )),
+      (failure) =>
+          emit(state.copyWith(isLoadingFields: false, error: failure.message)),
+      (fields) => emit(
+        state.copyWith(
+          fields: List<FieldDefinitionEntity>.from(fields),
+          isLoadingFields: false,
+        ),
+      ),
     );
   }
 
@@ -66,11 +70,16 @@ class ConditionBuilderCubit extends Cubit<ConditionBuilderState> {
   }
 
   void clearConditions() {
-    emit(state.copyWith(
-      expressionTree: const ConditionGroupEntity(operator: 'AND', children: []),
-      useCustomRego: false,
-      customRegoSnippet: '',
-    ));
+    emit(
+      state.copyWith(
+        expressionTree: const ConditionGroupEntity(
+          operator: 'AND',
+          children: [],
+        ),
+        useCustomRego: false,
+        customRegoSnippet: '',
+      ),
+    );
   }
 
   bool hasRules([ConditionNodeEntity? node]) {
@@ -85,7 +94,11 @@ class ConditionBuilderCubit extends Cubit<ConditionBuilderState> {
     return false;
   }
 
-  String generatePreview([ConditionNodeEntity? node, int depth = 0, bool isRoot = true]) {
+  String generatePreview([
+    ConditionNodeEntity? node,
+    int depth = 0,
+    bool isRoot = true,
+  ]) {
     final current = node ?? state.expressionTree;
     final indent = '  ' * depth;
 
@@ -145,6 +158,31 @@ class ConditionBuilderCubit extends Cubit<ConditionBuilderState> {
       );
 
       final vType = current.valueType;
+
+      if (vType == 'MATH_EXPRESSION') {
+        String mathStr = fieldDef.displayName;
+        if (current.mathOperations != null &&
+            current.mathOperations!.isNotEmpty) {
+          for (final op in current.mathOperations!) {
+            final opSym = op.mathOperator == 'MULTIPLY'
+                ? '*'
+                : op.mathOperator == 'DIVIDE'
+                ? '/'
+                : op.mathOperator == 'SUBTRACT'
+                ? '-'
+                : '+';
+            final opVal = op.operandType == 'FIELD'
+                ? '${op.value} (Field)'
+                : op.value;
+            mathStr = '($mathStr $opSym $opVal)';
+          }
+        }
+        final targetStr = current.compareTo == 'FIELD'
+            ? '${current.value ?? ''} (Field)'
+            : '"${current.value ?? ''}"';
+        return '$indent$mathStr ${current.comparison} $targetStr';
+      }
+
       String valStr = '';
 
       if (vType == 'FIELD') {
@@ -189,7 +227,8 @@ class ConditionBuilderCubit extends Cubit<ConditionBuilderState> {
 
     if (current is ConditionGroupEntity) {
       if (current.children.isEmpty) {
-        if (isRoot) return null; // Root without children is a valid empty condition
+        if (isRoot)
+          return null; // Root without children is a valid empty condition
         return 'Empty group detected in preview section. Add rules or remove empty group.';
       }
       for (final child in current.children) {
@@ -209,13 +248,48 @@ class ConditionBuilderCubit extends Cubit<ConditionBuilderState> {
       final val = current.value;
       final vType = current.valueType;
 
-      if (vType == 'FIELD' || vType == 'FIELD_LIST') {
+      if (vType == 'MATH_EXPRESSION') {
+        if (current.mathOperations != null) {
+          for (int i = 0; i < current.mathOperations!.length; i++) {
+            final op = current.mathOperations![i];
+            final opIndex = i + 1;
+            if (op.operandType == 'FIELD') {
+              final pathErr = PolicyValidators.validateFieldPath(op.value);
+              if (pathErr != null) {
+                return 'Math Op #$opIndex field path: $pathErr';
+              }
+            } else {
+              if (op.value.trim().isEmpty) {
+                return 'Math Op #$opIndex value is required.';
+              }
+              if (num.tryParse(op.value.trim()) == null) {
+                return 'Math Op #$opIndex value must be a valid number.';
+              }
+              if (op.mathOperator == 'DIVIDE' &&
+                  num.tryParse(op.value.trim()) == 0) {
+                return 'Math Op #$opIndex division by zero is not allowed.';
+              }
+            }
+          }
+        }
+        if (current.compareTo == 'FIELD') {
+          final pathErr = PolicyValidators.validateFieldPath(val?.toString());
+          if (pathErr != null) {
+            return 'Comparison target field path for "${fieldDef?.displayName ?? current.field}": $pathErr';
+          }
+        } else {
+          if (val == null || val.toString().trim().isEmpty) {
+            return 'Comparison target value is required for "${fieldDef?.displayName ?? current.field}".';
+          }
+        }
+      } else if (vType == 'FIELD' || vType == 'FIELD_LIST') {
         final pathErr = PolicyValidators.validateFieldPath(val?.toString());
         if (pathErr != null) {
           return 'Field path for "${fieldDef?.displayName ?? current.field}": $pathErr';
         }
       } else {
-        final isArrayOp = current.comparison == 'in' || current.comparison == 'not_in';
+        final isArrayOp =
+            current.comparison == 'in' || current.comparison == 'not_in';
         if (isArrayOp) {
           final isNum = fieldDef?.fieldType == 'NUMBER';
           if (val is List) {

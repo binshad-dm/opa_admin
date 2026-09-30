@@ -7,6 +7,7 @@ import '../../../domain/entities/condition_tree_entity.dart';
 import '../../../domain/entities/field_definition_entity.dart';
 import '../../../domain/utils/policy_validators.dart';
 import 'dynamic_dropdown_widget.dart';
+import 'math_expression_widget.dart';
 
 class ConditionRuleWidget extends StatefulWidget {
   final ConditionRuleEntity rule;
@@ -72,6 +73,9 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
     if (r.valueType == 'FIELD' || r.valueType == 'FIELD_LIST') {
       return val is String ? val : '';
     }
+    if (r.valueType == 'MATH_EXPRESSION') {
+      return val?.toString() ?? '';
+    }
     final isArray = r.comparison == 'in' || r.comparison == 'not_in';
     if (isArray) {
       if (val is List) {
@@ -127,6 +131,21 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
     dynamic newVal = '';
     final isArray =
         widget.rule.comparison == 'in' || widget.rule.comparison == 'not_in';
+
+    if (newType == 'MATH_EXPRESSION') {
+      final updatedRule = widget.rule.copyWith(
+        valueType: newType,
+        value: widget.rule.value is String ? widget.rule.value : '',
+        compareTo: widget.rule.compareTo ?? 'VALUE',
+        mathOperations: widget.rule.mathOperations ?? [],
+      );
+      final newText = _formatValueForText(updatedRule.value, updatedRule);
+      _textController.text = newText;
+      _textController.selection =
+          TextSelection.collapsed(offset: newText.length);
+      widget.onChange(updatedRule);
+      return;
+    }
 
     if (newType == 'FIELD' || newType == 'FIELD_LIST') {
       if (widget.rule.valueType == 'FIELD' ||
@@ -283,6 +302,16 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
   }
 
   Widget _buildValueInput() {
+    if (widget.rule.valueType == 'MATH_EXPRESSION') {
+      return Expanded(
+        child: MathExpressionWidget(
+          rule: widget.rule,
+          fields: widget.fields,
+          onChange: widget.onChange,
+        ),
+      );
+    }
+
     if (widget.rule.valueType == 'FIELD' ||
         widget.rule.valueType == 'FIELD_LIST') {
       final suggestions = allSuggestions;
@@ -658,6 +687,7 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
       MapEntry('VALUE', 'Static Value'),
       MapEntry('FIELD', 'Field Comparison'),
       MapEntry('FIELD_LIST', 'Field List'),
+      MapEntry('MATH_EXPRESSION', 'Math Expression'),
     ];
 
     final valueTypeDropdownItems = valueTypeOptions
@@ -763,7 +793,7 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
                       ),
                       const SizedBox(width: 8),
                       SizedBox(
-                        width: 130,
+                        width: 140,
                         child: _buildValueTypeDropdown(valueTypeDropdownItems),
                       ),
                       const SizedBox(width: 4),
@@ -786,7 +816,9 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
         return Padding(
           padding: const EdgeInsets.only(bottom: 8.0),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: widget.rule.valueType == 'MATH_EXPRESSION'
+                ? CrossAxisAlignment.start
+                : CrossAxisAlignment.center,
             children: [
               SizedBox(
                 width: 160,
@@ -802,7 +834,7 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
               ),
               const SizedBox(width: 8),
               SizedBox(
-                width: 135,
+                width: 140,
                 child: _buildValueTypeDropdown(valueTypeDropdownItems),
               ),
               const SizedBox(width: 8),
