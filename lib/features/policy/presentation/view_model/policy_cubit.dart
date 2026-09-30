@@ -356,8 +356,10 @@ class PolicyCubit extends Cubit<PolicyState> {
           enabled: true,
           effect: p.effect.isEmpty ? 'ALLOW' : p.effect,
           expressionJson: expressionJson,
+          clearExpressionJson: expressionJson == null,
           useCustomRego: useCustomRego,
           customRegoSnippet: customRegoSnippet,
+          clearCustomRegoSnippet: !useCustomRego || customRegoSnippet.isEmpty,
         );
         targetPolicy = updated;
         return updated;

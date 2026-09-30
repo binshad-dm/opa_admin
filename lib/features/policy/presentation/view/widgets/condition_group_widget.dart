@@ -59,6 +59,12 @@ class ConditionGroupWidget extends StatelessWidget {
   }
 
   void _addGroup(String op) {
+    final hasEmptyGroupOfSameType = node.children.any(
+      (c) => c is ConditionGroupEntity && c.children.isEmpty && c.operator == op,
+    );
+    if (hasEmptyGroupOfSameType) {
+      return;
+    }
     final newGroup = ConditionGroupEntity(operator: op, children: const []);
     final newChildren = List<ConditionNodeEntity>.from(node.children)
       ..add(newGroup);

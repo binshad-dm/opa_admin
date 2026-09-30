@@ -65,12 +65,35 @@ class ConditionBuilderCubit extends Cubit<ConditionBuilderState> {
     emit(state.copyWith(expressionTree: newTree));
   }
 
+  void clearConditions() {
+    emit(state.copyWith(
+      expressionTree: const ConditionGroupEntity(operator: 'AND', children: []),
+      useCustomRego: false,
+      customRegoSnippet: '',
+    ));
+  }
+
+  bool hasRules([ConditionNodeEntity? node]) {
+    final current = node ?? state.expressionTree;
+    if (current is ConditionRuleEntity) {
+      return current.field.trim().isNotEmpty;
+    } else if (current is ConditionGroupEntity) {
+      for (final child in current.children) {
+        if (hasRules(child)) return true;
+      }
+    }
+    return false;
+  }
+
   String generatePreview([ConditionNodeEntity? node, int depth = 0, bool isRoot = true]) {
     final current = node ?? state.expressionTree;
     final indent = '  ' * depth;
 
     if (current is ConditionGroupEntity) {
-      if (current.children.isEmpty) return '$indent(Empty Group)';
+      if (current.children.isEmpty) {
+        if (isRoot) return 'No conditions configured.';
+        return '$indent(Empty Group)';
+      }
 
       final childDepth = isRoot ? depth : depth + 1;
       final childPreviews = current.children
@@ -78,24 +101,38 @@ class ConditionBuilderCubit extends Cubit<ConditionBuilderState> {
           .where((s) => s.isNotEmpty)
           .toList();
 
-      if (childPreviews.isEmpty) return '$indent(Empty Group)';
-      if (childPreviews.length == 1) {
-        if (current.operator == 'NOT') {
-          return '$indent${current.operator} (${childPreviews.first.trim()})';
+      if (childPreviews.isEmpty) {
+        if (isRoot) return 'No conditions configured.';
+        return '$indent(Empty Group)';
+      }
+
+      // Deduplicate duplicate empty group previews so only configured groups are shown
+      final distinctPreviews = <String>[];
+      for (final cp in childPreviews) {
+        if (cp.trim() == '(Empty Group)' &&
+            distinctPreviews.any((e) => e.trim() == '(Empty Group)')) {
+          continue;
         }
-        return generatePreview(current.children.first, depth, isRoot);
+        distinctPreviews.add(cp);
+      }
+
+      if (distinctPreviews.length == 1) {
+        if (current.operator == 'NOT') {
+          return '$indent${current.operator} (${distinctPreviews.first.trim()})';
+        }
+        return distinctPreviews.first;
       }
 
       final childIndent = '  ' * childDepth;
       final joiner = '\n$childIndent${current.operator}\n';
 
       if (isRoot) {
-        return childPreviews.join(joiner);
+        return distinctPreviews.join(joiner);
       } else {
         if (current.operator == 'NOT') {
-          return '$indent${current.operator} (\n${childPreviews.join(joiner)}\n$indent)';
+          return '$indent${current.operator} (\n${distinctPreviews.join(joiner)}\n$indent)';
         }
-        return '$indent(\n${childPreviews.join(joiner)}\n$indent)';
+        return '$indent(\n${distinctPreviews.join(joiner)}\n$indent)';
       }
     } else if (current is ConditionRuleEntity) {
       final fieldDef = state.fields.firstWhere(
@@ -133,26 +170,30 @@ class ConditionBuilderCubit extends Cubit<ConditionBuilderState> {
     return '';
   }
 
-  bool hasEmptyGroup([ConditionNodeEntity? node]) {
+  bool hasEmptyGroup([ConditionNodeEntity? node, bool isRoot = true]) {
     final current = node ?? state.expressionTree;
     if (current is ConditionGroupEntity) {
-      if (current.children.isEmpty) return true;
+      if (current.children.isEmpty) {
+        // Root with no children is simply an unconditional policy, not an empty group defect
+        return !isRoot;
+      }
       for (final child in current.children) {
-        if (hasEmptyGroup(child)) return true;
+        if (hasEmptyGroup(child, false)) return true;
       }
     }
     return false;
   }
 
-  String? validateTree([ConditionNodeEntity? node]) {
+  String? validateTree([ConditionNodeEntity? node, bool isRoot = true]) {
     final current = node ?? state.expressionTree;
 
     if (current is ConditionGroupEntity) {
       if (current.children.isEmpty) {
+        if (isRoot) return null; // Root without children is a valid empty condition
         return 'Empty group detected in preview section. Add rules or remove empty group.';
       }
       for (final child in current.children) {
-        final err = validateTree(child);
+        final err = validateTree(child, false);
         if (err != null) return err;
       }
     } else if (current is ConditionRuleEntity) {

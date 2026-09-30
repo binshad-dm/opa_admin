@@ -50,8 +50,16 @@ class _PolicyDashboardContent extends StatelessWidget {
       context: context,
       permissionCode: permissionCode,
       policy: policy,
-      onApply: (pCode, json, useCustom, snippet) {
+      onApply: (pCode, json, useCustom, snippet) async {
         cubit.updatePolicyConditions(pCode, json, useCustom, snippet);
+        final message = await cubit.savePolicies();
+        if (context.mounted && message != null && message.isNotEmpty) {
+          showCustomSnackBar(
+            context: context,
+            message: message,
+            type: SnackBarType.success,
+          );
+        }
       },
     );
   }

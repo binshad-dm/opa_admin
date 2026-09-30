@@ -42,8 +42,10 @@ class PolicyEntity extends Equatable {
     bool? enabled,
     String? effect,
     Map<String, dynamic>? expressionJson,
+    bool clearExpressionJson = false,
     bool? useCustomRego,
     String? customRegoSnippet,
+    bool clearCustomRegoSnippet = false,
     String? disabledReason,
     bool? isDeleted,
     String? deletedReason,
@@ -57,9 +59,13 @@ class PolicyEntity extends Equatable {
       policyId: policyId ?? this.policyId,
       enabled: enabled ?? this.enabled,
       effect: effect ?? this.effect,
-      expressionJson: expressionJson ?? this.expressionJson,
+      expressionJson: clearExpressionJson
+          ? null
+          : (expressionJson ?? this.expressionJson),
       useCustomRego: useCustomRego ?? this.useCustomRego,
-      customRegoSnippet: customRegoSnippet ?? this.customRegoSnippet,
+      customRegoSnippet: clearCustomRegoSnippet
+          ? null
+          : (customRegoSnippet ?? this.customRegoSnippet),
       disabledReason: disabledReason ?? this.disabledReason,
       isDeleted: isDeleted ?? this.isDeleted,
       deletedReason: deletedReason ?? this.deletedReason,
@@ -69,19 +75,19 @@ class PolicyEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        permissionCode,
-        resourceName,
-        action,
-        namespace,
-        policyId,
-        enabled,
-        effect,
-        expressionJson,
-        useCustomRego,
-        customRegoSnippet,
-        disabledReason,
-        isDeleted,
-        deletedReason,
-        deprecated,
-      ];
+    permissionCode,
+    resourceName,
+    action,
+    namespace,
+    policyId,
+    enabled,
+    effect,
+    expressionJson,
+    useCustomRego,
+    customRegoSnippet,
+    disabledReason,
+    isDeleted,
+    deletedReason,
+    deprecated,
+  ];
 }

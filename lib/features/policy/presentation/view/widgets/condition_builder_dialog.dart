@@ -64,7 +64,8 @@ class _ConditionBuilderDialogState extends State<ConditionBuilderDialog> {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) =>
-          sl<ConditionBuilderCubit>()..init(widget.permissionCode, widget.policy),
+          sl<ConditionBuilderCubit>()
+            ..init(widget.permissionCode, widget.policy),
       child: BlocConsumer<ConditionBuilderCubit, ConditionBuilderState>(
         listener: (context, state) {
           if (state.error != null && state.error!.isNotEmpty) {
@@ -244,16 +245,16 @@ class _ConditionBuilderDialogState extends State<ConditionBuilderDialog> {
                             )
                           : isNarrow
                           ? (_activeTab == 'builder'
-                              ? SingleChildScrollView(
-                                  child: ConditionGroupWidget(
-                                    node: state.expressionTree,
-                                    fields: state.fields,
-                                    permissionCode: widget.permissionCode,
-                                    onChange: cubit.updateTree,
-                                    isRoot: true,
-                                  ),
-                                )
-                              : _buildPreviewContainer(context, cubit, state))
+                                ? SingleChildScrollView(
+                                    child: ConditionGroupWidget(
+                                      node: state.expressionTree,
+                                      fields: state.fields,
+                                      permissionCode: widget.permissionCode,
+                                      onChange: cubit.updateTree,
+                                      isRoot: true,
+                                    ),
+                                  )
+                                : _buildPreviewContainer(context, cubit, state))
                           : Flex(
                               direction: Axis.horizontal,
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -289,63 +290,85 @@ class _ConditionBuilderDialogState extends State<ConditionBuilderDialog> {
 
                     // Modal Footer
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Semantics(
-                          identifier: 'cancel_condition_builder_button',
-                          label: 'Cancel',
+                          identifier: 'clear_condition_builder_button',
+                          label: 'Clear all conditions',
                           button: true,
                           child: AppOutlinedButton(
-                            text: 'Cancel',
-                            onPressed: () => Navigator.of(context).pop(),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Semantics(
-                          identifier: 'apply_condition_builder_button',
-                          label: 'Apply conditions',
-                          button: true,
-                          enabled: cubit.isValid,
-                          child: AppButton(
-                            text: 'Apply',
-                            enabled: cubit.isValid,
+                            text: 'Clear Conditions',
                             onPressed: () {
-                              final formValid =
-                                  _formKey.currentState?.validate() ?? true;
-                              final validationError = cubit.validationError;
-
-                              if (!formValid || validationError != null) {
-                                showCustomSnackBar(
-                                  context: context,
-                                  message: validationError ??
-                                      'Please correct all validation errors before applying.',
-                                  type: SnackBarType.alert,
-                                );
-                                return;
-                              }
-
-                              if (state.useCustomRego) {
-                                widget.onApply(
-                                  widget.permissionCode,
-                                  null,
-                                  true,
-                                  state.customRegoSnippet,
-                                );
-                              } else {
-                                final treeJson =
-                                    state.expressionTree.children.isEmpty
-                                        ? null
-                                        : state.expressionTree.toJson();
-                                widget.onApply(
-                                  widget.permissionCode,
-                                  treeJson,
-                                  false,
-                                  '',
-                                );
-                              }
-                              Navigator.of(context).pop();
+                              cubit.clearConditions();
                             },
                           ),
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Semantics(
+                              identifier: 'cancel_condition_builder_button',
+                              label: 'Cancel',
+                              button: true,
+                              child: AppOutlinedButton(
+                                text: 'Cancel',
+                                onPressed: () => Navigator.of(context).pop(),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Semantics(
+                              identifier: 'apply_condition_builder_button',
+                              label: 'Apply conditions',
+                              button: true,
+                              enabled: cubit.isValid,
+                              child: AppButton(
+                                text: 'Apply',
+                                enabled: cubit.isValid,
+                                onPressed: () {
+                                  final formValid =
+                                      _formKey.currentState?.validate() ?? true;
+                                  final validationError = cubit.validationError;
+
+                                  if (!formValid || validationError != null) {
+                                    showCustomSnackBar(
+                                      context: context,
+                                      message:
+                                          validationError ??
+                                          'Please correct all validation errors before applying.',
+                                      type: SnackBarType.alert,
+                                    );
+                                    return;
+                                  }
+
+                                  if (state.useCustomRego) {
+                                    widget.onApply(
+                                      widget.permissionCode,
+                                      null,
+                                      true,
+                                      state.customRegoSnippet,
+                                    );
+                                  } else {
+                                    final hasRules = cubit.hasRules();
+                                    final treeJson =
+                                        (!hasRules ||
+                                            state
+                                                .expressionTree
+                                                .children
+                                                .isEmpty)
+                                        ? null
+                                        : state.expressionTree.toJson();
+                                    widget.onApply(
+                                      widget.permissionCode,
+                                      treeJson,
+                                      false,
+                                      '',
+                                    );
+                                  }
+                                  Navigator.of(context).pop();
+                                },
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -392,28 +415,28 @@ class _ConditionBuilderDialogState extends State<ConditionBuilderDialog> {
                   letterSpacing: 1.2,
                 ),
               ),
-              if (hasEmptyGroup)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.redAccent.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(
-                      color: Colors.redAccent.withOpacity(0.5),
-                    ),
-                  ),
-                  child: const Text(
-                    'EMPTY GROUP',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.redAccent,
-                    ),
-                  ),
-                ),
+              // if (hasEmptyGroup)
+              //   Container(
+              //     padding: const EdgeInsets.symmetric(
+              //       horizontal: 8,
+              //       vertical: 2,
+              //     ),
+              //     decoration: BoxDecoration(
+              //       color: Colors.redAccent.withOpacity(0.2),
+              //       borderRadius: BorderRadius.circular(4),
+              //       border: Border.all(
+              //         color: Colors.redAccent.withOpacity(0.5),
+              //       ),
+              //     ),
+              //     child: const Text(
+              //       'EMPTY GROUP',
+              //       style: TextStyle(
+              //         fontSize: 10,
+              //         fontWeight: FontWeight.bold,
+              //         color: Colors.redAccent,
+              //       ),
+              //     ),
+              //   ),
             ],
           ),
           const SizedBox(height: 12),
