@@ -47,6 +47,12 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
     return name.contains('age') || display.contains('age');
   }
 
+  bool get isNumericField =>
+      PolicyValidators.isNumericField(selectedField, widget.rule.field);
+
+  bool get isBooleanField =>
+      PolicyValidators.isBooleanField(selectedField);
+
   List<String> get userFieldSuggestions => const [];
 
   List<String> get resourceFieldSuggestions => widget.fields
@@ -87,6 +93,7 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
       text: _formatValueForText(widget.rule.value),
     );
     _textFocusNode = FocusNode();
+    _checkAndNormalizeRule();
   }
 
   @override
@@ -95,6 +102,11 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
     final typeChanged = oldWidget.rule.valueType != widget.rule.valueType;
     final fieldChanged = oldWidget.rule.field != widget.rule.field;
     final compChanged = oldWidget.rule.comparison != widget.rule.comparison;
+    final fieldsChanged = oldWidget.fields != widget.fields;
+
+    if (fieldChanged || fieldsChanged) {
+      _checkAndNormalizeRule();
+    }
 
     if (typeChanged || fieldChanged || compChanged) {
       final newText = _formatValueForText(widget.rule.value);
@@ -112,6 +124,40 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
           offset: expectedText.length,
         );
       }
+    }
+  }
+
+  void _checkAndNormalizeRule() {
+    final allowedOps = PolicyValidators.getAllowedOperators(
+      selectedField,
+      widget.rule.field,
+    );
+    final allowedValueTypes = PolicyValidators.getAllowedValueTypes(
+      selectedField,
+      widget.rule.field,
+    );
+    final isOpValid = allowedOps.contains(widget.rule.comparison);
+    final isValueTypeValid = allowedValueTypes.any(
+      (e) => e.key == widget.rule.valueType,
+    );
+
+    if (!isOpValid || !isValueTypeValid) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final newOp = isOpValid
+            ? widget.rule.comparison
+            : (allowedOps.isNotEmpty ? allowedOps.first : '==');
+        final newType = isValueTypeValid ? widget.rule.valueType : 'VALUE';
+        widget.onChange(
+          widget.rule.copyWith(
+            comparison: newOp,
+            valueType: newType,
+            mathOperations: newType == 'MATH_EXPRESSION'
+                ? widget.rule.mathOperations
+                : null,
+          ),
+        );
+      });
     }
   }
 
@@ -180,13 +226,31 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
       newField = widget.fields.firstWhere((f) => f.fieldName == newFieldName);
     } catch (_) {}
 
+    final allowedOps = PolicyValidators.getAllowedOperators(
+      newField,
+      newFieldName,
+    );
+    String newComparison = widget.rule.comparison;
+    if (!allowedOps.contains(newComparison)) {
+      newComparison = allowedOps.isNotEmpty ? allowedOps.first : '==';
+    }
+
+    final allowedValueTypes = PolicyValidators.getAllowedValueTypes(
+      newField,
+      newFieldName,
+    );
+    String newValueType = widget.rule.valueType;
+    if (!allowedValueTypes.any((e) => e.key == newValueType)) {
+      newValueType = 'VALUE';
+    }
+
     dynamic defaultValue = widget.rule.value;
-    if (widget.rule.valueType == 'VALUE') {
+    if (newValueType == 'VALUE') {
       final isArray =
-          widget.rule.comparison == 'in' || widget.rule.comparison == 'not_in';
+          newComparison == 'in' || newComparison == 'not_in';
       if (isArray) {
         defaultValue = <String>[];
-      } else if (newField?.fieldType == 'BOOLEAN') {
+      } else if (PolicyValidators.isBooleanField(newField)) {
         defaultValue = true;
       } else if (newField?.allowedValues != null &&
           newField!.allowedValues!.isNotEmpty) {
@@ -194,12 +258,18 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
       } else {
         defaultValue = '';
       }
+    } else if (newValueType != widget.rule.valueType) {
+      defaultValue = '';
     }
 
     final updatedRule = widget.rule.copyWith(
       field: newFieldName,
+      comparison: newComparison,
       value: defaultValue,
-      valueType: widget.rule.valueType,
+      valueType: newValueType,
+      mathOperations: newValueType == 'MATH_EXPRESSION'
+          ? widget.rule.mathOperations
+          : null,
     );
     final newText = _formatValueForText(defaultValue, updatedRule);
     _textController.text = newText;
@@ -251,14 +321,16 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
     List<String> compOptions,
     List<DropdownMenuItem<String>> compDropdownItems,
   ) {
+    final validComparison = compOptions.contains(widget.rule.comparison)
+        ? widget.rule.comparison
+        : (compOptions.isNotEmpty ? compOptions.first : '==');
+
     return Semantics(
       identifier: 'condition_rule_operator_dropdown',
       label: 'Rule comparison operator',
       button: true,
       child: AppDropdownField<String>(
-        value: compOptions.contains(widget.rule.comparison)
-            ? widget.rule.comparison
-            : '==',
+        value: validComparison,
         items: compDropdownItems,
         onChanged: _handleComparisonChange,
       ),
@@ -266,14 +338,20 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
   }
 
   Widget _buildValueTypeDropdown(
+    List<MapEntry<String, String>> valueTypeOptions,
     List<DropdownMenuItem<String>> valueTypeDropdownItems,
   ) {
+    final validValues = valueTypeOptions.map((e) => e.key).toSet();
+    final validValue = validValues.contains(widget.rule.valueType)
+        ? widget.rule.valueType
+        : 'VALUE';
+
     return Semantics(
       identifier: 'condition_rule_value_type_dropdown',
       label: 'Rule value type',
       button: true,
       child: AppDropdownField<String>(
-        value: widget.rule.valueType,
+        value: validValue,
         items: valueTypeDropdownItems,
         onChanged: _handleValueTypeChange,
       ),
@@ -428,7 +506,7 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
             focusNode: _textFocusNode,
             keyboardType: isAgeField
                 ? TextInputType.number
-                : (selectedField?.fieldType == 'NUMBER'
+                : (isNumericField
                       ? const TextInputType.numberWithOptions(
                           decimal: true,
                           signed: true,
@@ -440,7 +518,7 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
             hintText: isAgeField ? 'e.g. 18, 25, 60' : 'value1, value2...',
             validator: (val) => PolicyValidators.validateArrayValues(
               val,
-              isNumeric: selectedField?.fieldType == 'NUMBER',
+              isNumeric: isNumericField,
               isAge: isAgeField,
             ),
             autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -525,7 +603,7 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
       );
     }
 
-    if (field.fieldType == 'BOOLEAN') {
+    if (isBooleanField) {
       final valStr = widget.rule.value?.toString();
       return Expanded(
         child: Align(
@@ -560,7 +638,7 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
       );
     }
 
-    if (field.fieldType == 'NUMBER') {
+    if (isNumericField) {
       return Expanded(
         child: Semantics(
           identifier: 'condition_rule_number_text_field',
@@ -644,17 +722,10 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
         ? widget.rule.field
         : (fieldItems.isNotEmpty ? fieldItems.first.value : null);
 
-    const compOptions = [
-      '==',
-      '!=',
-      'in',
-      'not_in',
-      'contains',
-      '<=',
-      '>=',
-      '<',
-      '>',
-    ];
+    final compOptions = PolicyValidators.getAllowedOperators(
+      selectedField,
+      widget.rule.field,
+    );
 
     final compDropdownItems = compOptions
         .map(
@@ -665,12 +736,10 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
         )
         .toList();
 
-    const valueTypeOptions = [
-      MapEntry('VALUE', 'Static Value'),
-      MapEntry('FIELD', 'Field Comparison'),
-      MapEntry('FIELD_LIST', 'Field List'),
-      MapEntry('MATH_EXPRESSION', 'Math Expression'),
-    ];
+    final valueTypeOptions = PolicyValidators.getAllowedValueTypes(
+      selectedField,
+      widget.rule.field,
+    );
 
     final valueTypeDropdownItems = valueTypeOptions
         .map(
@@ -728,7 +797,10 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
                       const SizedBox(width: 8),
                       Expanded(
                         flex: 5,
-                        child: _buildValueTypeDropdown(valueTypeDropdownItems),
+                        child: _buildValueTypeDropdown(
+                          valueTypeOptions,
+                          valueTypeDropdownItems,
+                        ),
                       ),
                     ],
                   ),
@@ -763,7 +835,7 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
                       ),
                       const SizedBox(width: 8),
                       SizedBox(
-                        width: 95,
+                        width: 105,
                         child: _buildComparisonDropdown(
                           compOptions,
                           compDropdownItems,
@@ -771,8 +843,11 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
                       ),
                       const SizedBox(width: 8),
                       SizedBox(
-                        width: 140,
-                        child: _buildValueTypeDropdown(valueTypeDropdownItems),
+                        width: 145,
+                        child: _buildValueTypeDropdown(
+                          valueTypeOptions,
+                          valueTypeDropdownItems,
+                        ),
                       ),
                       const SizedBox(width: 4),
                       _buildRemoveButton(),
@@ -800,13 +875,16 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
               ),
               const SizedBox(width: 8),
               SizedBox(
-                width: 95,
+                width: 105,
                 child: _buildComparisonDropdown(compOptions, compDropdownItems),
               ),
               const SizedBox(width: 8),
               SizedBox(
-                width: 140,
-                child: _buildValueTypeDropdown(valueTypeDropdownItems),
+                width: 145,
+                child: _buildValueTypeDropdown(
+                  valueTypeOptions,
+                  valueTypeDropdownItems,
+                ),
               ),
               const SizedBox(width: 8),
               _buildValueInput(),

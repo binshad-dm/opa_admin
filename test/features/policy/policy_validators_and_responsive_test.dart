@@ -109,6 +109,126 @@ void main() {
         contains('Unterminated string literal'),
       );
     });
+
+    test('isNumericField and isBooleanField correctly identify field types', () {
+      const numField = FieldDefinitionEntity(
+        fieldName: 'patientAge',
+        displayName: 'Patient Age',
+        fieldType: 'NUMBER',
+      );
+      const strField = FieldDefinitionEntity(
+        fieldName: 'doctorSpecialty',
+        displayName: 'Doctor Specialty',
+        fieldType: 'STRING',
+      );
+      const boolField = FieldDefinitionEntity(
+        fieldName: 'isEmergency',
+        displayName: 'Is Emergency',
+        fieldType: 'BOOLEAN',
+      );
+
+      expect(PolicyValidators.isNumericField(numField), isTrue);
+      expect(PolicyValidators.isNumericField(null, 'patientAge'), isTrue);
+      expect(PolicyValidators.isNumericField(strField), isFalse);
+      expect(PolicyValidators.isBooleanField(boolField), isTrue);
+      expect(PolicyValidators.isBooleanField(numField), isFalse);
+      expect(PolicyValidators.isBooleanField(strField), isFalse);
+    });
+
+    test('getAllowedOperators filters operators based on field type', () {
+      const numField = FieldDefinitionEntity(
+        fieldName: 'patientAge',
+        displayName: 'Patient Age',
+        fieldType: 'NUMBER',
+      );
+      const strField = FieldDefinitionEntity(
+        fieldName: 'doctorSpecialty',
+        displayName: 'Doctor Specialty',
+        fieldType: 'STRING',
+      );
+      const boolField = FieldDefinitionEntity(
+        fieldName: 'isEmergency',
+        displayName: 'Is Emergency',
+        fieldType: 'BOOLEAN',
+      );
+
+      final numOps = PolicyValidators.getAllowedOperators(numField);
+      expect(numOps, contains('=='));
+      expect(numOps, contains('<='));
+      expect(numOps, contains('>'));
+      expect(numOps, contains('in'));
+      // Bug 1: contains must NOT be allowed for numeric fields!
+      expect(numOps, isNot(contains('contains')));
+
+      final strOps = PolicyValidators.getAllowedOperators(strField);
+      expect(strOps, contains('=='));
+      expect(strOps, contains('contains'));
+      expect(strOps, contains('in'));
+      // Bug 2 & 3: numeric comparisons must NOT be allowed for string fields!
+      expect(strOps, isNot(contains('>')));
+      expect(strOps, isNot(contains('<')));
+      expect(strOps, isNot(contains('>=')));
+      expect(strOps, isNot(contains('<=')));
+
+      final boolOps = PolicyValidators.getAllowedOperators(boolField);
+      expect(boolOps, equals(['==', '!=']));
+    });
+
+    test('getAllowedValueTypes only includes MATH_EXPRESSION for numeric fields', () {
+      const numField = FieldDefinitionEntity(
+        fieldName: 'patientAge',
+        displayName: 'Patient Age',
+        fieldType: 'NUMBER',
+      );
+      const strField = FieldDefinitionEntity(
+        fieldName: 'doctorSpecialty',
+        displayName: 'Doctor Specialty',
+        fieldType: 'STRING',
+      );
+
+      final numTypes = PolicyValidators.getAllowedValueTypes(numField).map((e) => e.key).toList();
+      expect(numTypes, contains('MATH_EXPRESSION'));
+
+      final strTypes = PolicyValidators.getAllowedValueTypes(strField).map((e) => e.key).toList();
+      expect(strTypes, isNot(contains('MATH_EXPRESSION')));
+    });
+
+    test('validateRuleOperator and validateRuleValueType flag invalid combinations', () {
+      const numField = FieldDefinitionEntity(
+        fieldName: 'patientAge',
+        displayName: 'Patient Age',
+        fieldType: 'NUMBER',
+      );
+      const strField = FieldDefinitionEntity(
+        fieldName: 'doctorSpecialty',
+        displayName: 'Doctor Specialty',
+        fieldType: 'STRING',
+      );
+
+      // Bug 1: contains on Patient Age
+      expect(
+        PolicyValidators.validateRuleOperator('contains', numField),
+        contains('not supported for numeric field "Patient Age"'),
+      );
+
+      // Bug 2 & 3: > on Doctor Specialty
+      expect(
+        PolicyValidators.validateRuleOperator('>', strField),
+        contains('not supported for string field "Doctor Specialty"'),
+      );
+
+      // Math expression on string field
+      expect(
+        PolicyValidators.validateRuleValueType('MATH_EXPRESSION', strField),
+        contains('Math expression is only supported for numeric fields'),
+      );
+
+      // Valid combinations
+      expect(PolicyValidators.validateRuleOperator('<=', numField), isNull);
+      expect(PolicyValidators.validateRuleOperator('contains', strField), isNull);
+      expect(PolicyValidators.validateRuleValueType('VALUE', strField), isNull);
+      expect(PolicyValidators.validateRuleValueType('MATH_EXPRESSION', numField), isNull);
+    });
   });
 
   group('Responsive Widget Layout Tests', () {

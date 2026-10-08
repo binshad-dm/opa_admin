@@ -1,7 +1,124 @@
+import '../entities/field_definition_entity.dart';
+
 class PolicyValidators {
   static final RegExp _fieldPathRegex = RegExp(
     r'^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)*$',
   );
+
+  static const Set<String> numericFieldTypes = {
+    'NUMBER',
+    'INTEGER',
+    'INT',
+    'DECIMAL',
+    'LONG',
+    'FLOAT',
+    'DOUBLE',
+    'BIGDECIMAL',
+  };
+
+  /// Checks if a field is numeric based on its entity definition or field name (e.g. contains 'age').
+  static bool isNumericField(
+    FieldDefinitionEntity? field, [
+    String? fallbackFieldName,
+  ]) {
+    final name = (field?.fieldName ?? fallbackFieldName ?? '').toLowerCase();
+    final display = (field?.displayName ?? '').toLowerCase();
+    if (name.contains('age') || display.contains('age')) {
+      return true;
+    }
+    final type = field?.fieldType.toUpperCase().trim() ?? '';
+    return numericFieldTypes.contains(type);
+  }
+
+  /// Checks if a field is boolean.
+  static bool isBooleanField(FieldDefinitionEntity? field) {
+    final type = field?.fieldType.toUpperCase().trim() ?? '';
+    return type == 'BOOLEAN' || type == 'BOOL';
+  }
+
+  /// Returns allowed comparison operators for the field based on its type:
+  /// - Boolean: ['==', '!=']
+  /// - Numeric: ['==', '!=', '<=', '>=', '<', '>', 'in', 'not_in'] (no 'contains')
+  /// - String / other: ['==', '!=', 'contains', 'in', 'not_in'] (no '<', '<=', '>', '>=')
+  static List<String> getAllowedOperators(
+    FieldDefinitionEntity? field, [
+    String? fallbackFieldName,
+  ]) {
+    if (isBooleanField(field)) {
+      return const ['==', '!='];
+    }
+    if (isNumericField(field, fallbackFieldName)) {
+      return const ['==', '!=', '<=', '>=', '<', '>', 'in', 'not_in'];
+    }
+    // String & default
+    return const ['==', '!=', 'contains', 'in', 'not_in'];
+  }
+
+  /// Returns allowed value types for the field:
+  /// - Numeric: ['VALUE', 'FIELD', 'FIELD_LIST', 'MATH_EXPRESSION']
+  /// - Boolean: ['VALUE', 'FIELD']
+  /// - String / other: ['VALUE', 'FIELD', 'FIELD_LIST'] (no 'MATH_EXPRESSION')
+  static List<MapEntry<String, String>> getAllowedValueTypes(
+    FieldDefinitionEntity? field, [
+    String? fallbackFieldName,
+  ]) {
+    if (isNumericField(field, fallbackFieldName)) {
+      return const [
+        MapEntry('VALUE', 'Static Value'),
+        MapEntry('FIELD', 'Field Comparison'),
+        MapEntry('FIELD_LIST', 'Field List'),
+        MapEntry('MATH_EXPRESSION', 'Math Expression'),
+      ];
+    }
+    if (isBooleanField(field)) {
+      return const [
+        MapEntry('VALUE', 'Static Value'),
+        MapEntry('FIELD', 'Field Comparison'),
+      ];
+    }
+    return const [
+      MapEntry('VALUE', 'Static Value'),
+      MapEntry('FIELD', 'Field Comparison'),
+      MapEntry('FIELD_LIST', 'Field List'),
+    ];
+  }
+
+  /// Validates whether an operator is permitted for a given field type.
+  static String? validateRuleOperator(
+    String operator,
+    FieldDefinitionEntity? field, [
+    String? fallbackFieldName,
+  ]) {
+    final allowed = getAllowedOperators(field, fallbackFieldName);
+    if (!allowed.contains(operator)) {
+      final displayName = field?.displayName ?? fallbackFieldName ?? 'Field';
+      if (isBooleanField(field)) {
+        return 'Operator "$operator" is not supported for boolean field "$displayName".';
+      } else if (isNumericField(field, fallbackFieldName)) {
+        return 'Operator "$operator" is not supported for numeric field "$displayName".';
+      } else {
+        return 'Operator "$operator" is not supported for string field "$displayName".';
+      }
+    }
+    return null;
+  }
+
+  /// Validates whether a value type is permitted for a given field type.
+  static String? validateRuleValueType(
+    String valueType,
+    FieldDefinitionEntity? field, [
+    String? fallbackFieldName,
+  ]) {
+    final allowed = getAllowedValueTypes(field, fallbackFieldName);
+    if (!allowed.any((e) => e.key == valueType)) {
+      final displayName = field?.displayName ?? fallbackFieldName ?? 'Field';
+      if (valueType == 'MATH_EXPRESSION') {
+        return 'Math expression is only supported for numeric fields.';
+      }
+      return 'Value type "$valueType" is not supported for field "$displayName".';
+    }
+    return null;
+  }
 
   /// Validates that a string value is not empty or pure whitespace.
   static String? validateRequired(String? value, [String fieldName = 'Value']) {

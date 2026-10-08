@@ -248,6 +248,22 @@ class ConditionBuilderCubit extends Cubit<ConditionBuilderState> {
       final val = current.value;
       final vType = current.valueType;
 
+      // Validate operator for field type
+      final opErr = PolicyValidators.validateRuleOperator(
+        current.comparison,
+        fieldDef,
+        current.field,
+      );
+      if (opErr != null) return opErr;
+
+      // Validate value type for field type
+      final vTypeErr = PolicyValidators.validateRuleValueType(
+        vType,
+        fieldDef,
+        current.field,
+      );
+      if (vTypeErr != null) return vTypeErr;
+
       if (vType == 'MATH_EXPRESSION') {
         if (current.mathOperations != null) {
           for (int i = 0; i < current.mathOperations!.length; i++) {
@@ -291,7 +307,10 @@ class ConditionBuilderCubit extends Cubit<ConditionBuilderState> {
         final isArrayOp =
             current.comparison == 'in' || current.comparison == 'not_in';
         if (isArrayOp) {
-          final isNum = fieldDef?.fieldType == 'NUMBER';
+          final isNum = PolicyValidators.isNumericField(
+            fieldDef,
+            current.field,
+          );
           if (val is List) {
             if (val.isEmpty || val.every((e) => e.toString().trim().isEmpty)) {
               return 'At least one value is required for "${fieldDef?.displayName ?? current.field}".';
@@ -325,7 +344,7 @@ class ConditionBuilderCubit extends Cubit<ConditionBuilderState> {
               return 'Values for "${fieldDef?.displayName ?? current.field}": $arrErr';
             }
           }
-        } else if (fieldDef?.fieldType == 'NUMBER') {
+        } else if (PolicyValidators.isNumericField(fieldDef, current.field)) {
           final isAge =
               (fieldDef?.fieldName.toLowerCase().contains('age') ?? false) ||
               (fieldDef?.displayName.toLowerCase().contains('age') ?? false);
@@ -342,7 +361,7 @@ class ConditionBuilderCubit extends Cubit<ConditionBuilderState> {
             );
             if (numErr != null) return numErr;
           }
-        } else if (fieldDef?.fieldType == 'BOOLEAN') {
+        } else if (PolicyValidators.isBooleanField(fieldDef)) {
           if (val != true && val != false) {
             return 'Select a boolean value for "${fieldDef?.displayName ?? current.field}".';
           }

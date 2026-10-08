@@ -4,6 +4,7 @@ import '../../../../../core/design/widgets/app_button.dart';
 import '../../../../../core/design/widgets/app_dropdown_field.dart';
 import '../../../domain/entities/condition_tree_entity.dart';
 import '../../../domain/entities/field_definition_entity.dart';
+import '../../../domain/utils/policy_validators.dart';
 import 'condition_rule_widget.dart';
 
 class ConditionGroupWidget extends StatelessWidget {
@@ -39,16 +40,22 @@ class ConditionGroupWidget extends StatelessWidget {
   void _addRule() {
     final defaultField = fields.isNotEmpty ? fields.first : null;
     dynamic defaultValue = '';
-    if (defaultField?.fieldType == 'BOOLEAN') {
+    if (PolicyValidators.isBooleanField(defaultField)) {
       defaultValue = true;
     } else if (defaultField?.allowedValues != null &&
         defaultField!.allowedValues!.isNotEmpty) {
       defaultValue = defaultField.allowedValues!.first;
     }
 
+    final allowedOps = PolicyValidators.getAllowedOperators(
+      defaultField,
+      defaultField?.fieldName,
+    );
+    final defaultOp = allowedOps.isNotEmpty ? allowedOps.first : '==';
+
     final newRule = ConditionRuleEntity(
       field: defaultField?.fieldName ?? '',
-      comparison: '==',
+      comparison: defaultOp,
       value: defaultValue,
       valueType: 'VALUE',
     );
@@ -60,7 +67,8 @@ class ConditionGroupWidget extends StatelessWidget {
 
   void _addGroup(String op) {
     final hasEmptyGroupOfSameType = node.children.any(
-      (c) => c is ConditionGroupEntity && c.children.isEmpty && c.operator == op,
+      (c) =>
+          c is ConditionGroupEntity && c.children.isEmpty && c.operator == op,
     );
     if (hasEmptyGroupOfSameType) {
       return;
@@ -114,7 +122,8 @@ class ConditionGroupWidget extends StatelessWidget {
                     width: 135,
                     child: Semantics(
                       identifier: 'condition_group_operator_dropdown',
-                      label: 'Match operator: ALL (AND), ANY (OR), or NONE (NOT)',
+                      label:
+                          'Match operator: ALL (AND), ANY (OR), or NONE (NOT)',
                       button: true,
                       child: AppDropdownField<String>(
                         value: node.operator,
@@ -128,7 +137,10 @@ class ConditionGroupWidget extends StatelessWidget {
                           ),
                           DropdownMenuItem(
                             value: 'OR',
-                            child: Text('ANY (OR)', style: TextStyle(fontSize: 12)),
+                            child: Text(
+                              'ANY (OR)',
+                              style: TextStyle(fontSize: 12),
+                            ),
                           ),
                           DropdownMenuItem(
                             value: 'NOT',
@@ -139,7 +151,8 @@ class ConditionGroupWidget extends StatelessWidget {
                           ),
                         ],
                         onChanged: (val) {
-                          if (val != null) onChange(node.copyWith(operator: val));
+                          if (val != null)
+                            onChange(node.copyWith(operator: val));
                         },
                       ),
                     ),
@@ -183,19 +196,12 @@ class ConditionGroupWidget extends StatelessWidget {
               if (isTight && removeButton != null) {
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    operatorSection,
-                    removeButton,
-                  ],
+                  children: [operatorSection, removeButton],
                 );
               }
 
               return Row(
-                children: [
-                  operatorSection,
-                  const Spacer(),
-                  ?removeButton,
-                ],
+                children: [operatorSection, const Spacer(), ?removeButton],
               );
             },
           ),
