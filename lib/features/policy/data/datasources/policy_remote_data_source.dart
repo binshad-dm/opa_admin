@@ -70,6 +70,8 @@ class PolicyRemoteDataSourceImpl implements PolicyRemoteDataSource {
         port = 8081;
       } else if (identifier.startsWith('pharmacy')) {
         port = 8083;
+      } else if (identifier.startsWith('identity')) {
+        port = 8085;
       }
     }
     return '${uri.scheme}://${uri.host}:$port';
@@ -260,9 +262,11 @@ class PolicyRemoteDataSourceImpl implements PolicyRemoteDataSource {
         if (rawData is List && search != null && search.trim().isNotEmpty) {
           final q = search.trim().toLowerCase();
           items = items
-              .where((r) =>
-                  r.name.toLowerCase().contains(q) ||
-                  (r.description?.toLowerCase().contains(q) ?? false))
+              .where(
+                (r) =>
+                    r.name.toLowerCase().contains(q) ||
+                    (r.description?.toLowerCase().contains(q) ?? false),
+              )
               .toList();
         }
         return items;
@@ -285,9 +289,11 @@ class PolicyRemoteDataSourceImpl implements PolicyRemoteDataSource {
         if (search != null && search.trim().isNotEmpty) {
           final q = search.trim().toLowerCase();
           items = items
-              .where((r) =>
-                  r.name.toLowerCase().contains(q) ||
-                  (r.description?.toLowerCase().contains(q) ?? false))
+              .where(
+                (r) =>
+                    r.name.toLowerCase().contains(q) ||
+                    (r.description?.toLowerCase().contains(q) ?? false),
+              )
               .toList();
         }
         final startIndex = (page - 1) * size;
@@ -327,9 +333,11 @@ class PolicyRemoteDataSourceImpl implements PolicyRemoteDataSource {
         if (rawData is List && search != null && search.trim().isNotEmpty) {
           final q = search.trim().toLowerCase();
           items = items
-              .where((u) =>
-                  u.displayName.toLowerCase().contains(q) ||
-                  u.email.toLowerCase().contains(q))
+              .where(
+                (u) =>
+                    u.displayName.toLowerCase().contains(q) ||
+                    u.email.toLowerCase().contains(q),
+              )
               .toList();
         }
         return items;
@@ -352,9 +360,11 @@ class PolicyRemoteDataSourceImpl implements PolicyRemoteDataSource {
         if (search != null && search.trim().isNotEmpty) {
           final q = search.trim().toLowerCase();
           items = items
-              .where((u) =>
-                  u.displayName.toLowerCase().contains(q) ||
-                  u.email.toLowerCase().contains(q))
+              .where(
+                (u) =>
+                    u.displayName.toLowerCase().contains(q) ||
+                    u.email.toLowerCase().contains(q),
+              )
               .toList();
         }
         final startIndex = (page - 1) * size;

@@ -20,13 +20,7 @@ class MathExpressionWidget extends StatelessWidget {
     required this.onChange,
   });
 
-  List<String> get userFieldSuggestions => const [
-    'user.location',
-    'user.department',
-    'user.id',
-    'user.email',
-    'user.roles',
-  ];
+  List<String> get userFieldSuggestions => const [];
 
   List<String> get numericResourceSuggestions {
     const numericTypes = {

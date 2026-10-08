@@ -47,13 +47,7 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
     return name.contains('age') || display.contains('age');
   }
 
-  List<String> get userFieldSuggestions => const [
-        'user.location',
-        'user.department',
-        'user.id',
-        'user.email',
-        'user.roles',
-      ];
+  List<String> get userFieldSuggestions => const [];
 
   List<String> get resourceFieldSuggestions => widget.fields
       .map(
@@ -64,9 +58,9 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
       .toList();
 
   List<String> get allSuggestions => [
-        ...userFieldSuggestions,
-        ...resourceFieldSuggestions,
-      ];
+    ...userFieldSuggestions,
+    ...resourceFieldSuggestions,
+  ];
 
   String _formatValueForText(dynamic val, [ConditionRuleEntity? currentRule]) {
     final r = currentRule ?? widget.rule;
@@ -106,15 +100,17 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
       final newText = _formatValueForText(widget.rule.value);
       if (_textController.text != newText) {
         _textController.text = newText;
-        _textController.selection =
-            TextSelection.collapsed(offset: newText.length);
+        _textController.selection = TextSelection.collapsed(
+          offset: newText.length,
+        );
       }
     } else {
       final expectedText = _formatValueForText(widget.rule.value);
       if (!_textFocusNode.hasFocus && _textController.text != expectedText) {
         _textController.text = expectedText;
-        _textController.selection =
-            TextSelection.collapsed(offset: expectedText.length);
+        _textController.selection = TextSelection.collapsed(
+          offset: expectedText.length,
+        );
       }
     }
   }
@@ -141,8 +137,9 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
       );
       final newText = _formatValueForText(updatedRule.value, updatedRule);
       _textController.text = newText;
-      _textController.selection =
-          TextSelection.collapsed(offset: newText.length);
+      _textController.selection = TextSelection.collapsed(
+        offset: newText.length,
+      );
       widget.onChange(updatedRule);
       return;
     }
@@ -290,11 +287,7 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
       button: true,
       tooltip: 'Remove rule',
       child: IconButton(
-        icon: const Icon(
-          Icons.close,
-          size: 18,
-          color: Colors.redAccent,
-        ),
+        icon: const Icon(Icons.close, size: 18, color: Colors.redAccent),
         tooltip: 'Remove rule',
         onPressed: widget.onRemove,
       ),
@@ -315,8 +308,9 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
     if (widget.rule.valueType == 'FIELD' ||
         widget.rule.valueType == 'FIELD_LIST') {
       final suggestions = allSuggestions;
-      final currentStr =
-          widget.rule.value is String ? widget.rule.value as String : '';
+      final currentStr = widget.rule.value is String
+          ? widget.rule.value as String
+          : '';
       final isKnown = suggestions.contains(currentStr);
       final dropdownVal = isKnown
           ? currentStr
@@ -369,8 +363,9 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
                 onChanged: (val) {
                   if (val != null && val != '__custom__') {
                     _textController.text = val;
-                    _textController.selection =
-                        TextSelection.collapsed(offset: val.length);
+                    _textController.selection = TextSelection.collapsed(
+                      offset: val.length,
+                    );
                     widget.onChange(widget.rule.copyWith(value: val));
                   }
                 },
@@ -400,11 +395,7 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
             if (isNarrow) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  dropdown,
-                  const SizedBox(height: 8),
-                  textField,
-                ],
+                children: [dropdown, const SizedBox(height: 8), textField],
               );
             }
 
@@ -430,17 +421,19 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
           label: 'Comma-separated values',
           textField: true,
           child: AppTextFormField(
-            key: ValueKey('array_${widget.rule.field}_${widget.rule.valueType}'),
+            key: ValueKey(
+              'array_${widget.rule.field}_${widget.rule.valueType}',
+            ),
             controller: _textController,
             focusNode: _textFocusNode,
             keyboardType: isAgeField
                 ? TextInputType.number
                 : (selectedField?.fieldType == 'NUMBER'
-                    ? const TextInputType.numberWithOptions(
-                        decimal: true,
-                        signed: true,
-                      )
-                    : TextInputType.text),
+                      ? const TextInputType.numberWithOptions(
+                          decimal: true,
+                          signed: true,
+                        )
+                      : TextInputType.text),
             inputFormatters: isAgeField
                 ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9,\s]'))]
                 : null,
@@ -509,8 +502,8 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
           .toList();
       final currentVal =
           items.any((i) => i.value == widget.rule.value?.toString())
-              ? widget.rule.value?.toString()
-              : null;
+          ? widget.rule.value?.toString()
+          : null;
 
       return Expanded(
         child: Semantics(
@@ -593,23 +586,15 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
             hintText: isAgeField ? 'e.g. 25' : 'Value...',
             validator: (val) {
               if (isAgeField) {
-                return PolicyValidators.validateAge(
-                  val,
-                  field.displayName,
-                );
+                return PolicyValidators.validateAge(val, field.displayName);
               }
-              return PolicyValidators.validateNumber(
-                val,
-                field.displayName,
-              );
+              return PolicyValidators.validateNumber(val, field.displayName);
             },
             autovalidateMode: AutovalidateMode.onUserInteraction,
             onChanged: (val) {
               if (isAgeField) {
                 final parsed = int.tryParse(val);
-                widget.onChange(
-                  widget.rule.copyWith(value: parsed ?? val),
-                );
+                widget.onChange(widget.rule.copyWith(value: parsed ?? val));
               } else {
                 widget.onChange(
                   widget.rule.copyWith(value: num.tryParse(val) ?? val),
@@ -631,13 +616,10 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
           controller: _textController,
           focusNode: _textFocusNode,
           hintText: 'Value...',
-          validator: (val) => PolicyValidators.validateRequired(
-            val,
-            field.displayName,
-          ),
+          validator: (val) =>
+              PolicyValidators.validateRequired(val, field.displayName),
           autovalidateMode: AutovalidateMode.onUserInteraction,
-          onChanged: (val) =>
-              widget.onChange(widget.rule.copyWith(value: val)),
+          onChanged: (val) => widget.onChange(widget.rule.copyWith(value: val)),
         ),
       ),
     );
@@ -751,11 +733,7 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _buildValueInput(),
-                    ],
-                  ),
+                  Row(children: [_buildValueInput()]),
                 ],
               ),
             ),
@@ -801,11 +779,7 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _buildValueInput(),
-                    ],
-                  ),
+                  Row(children: [_buildValueInput()]),
                 ],
               ),
             ),
@@ -827,10 +801,7 @@ class _ConditionRuleWidgetState extends State<ConditionRuleWidget> {
               const SizedBox(width: 8),
               SizedBox(
                 width: 95,
-                child: _buildComparisonDropdown(
-                  compOptions,
-                  compDropdownItems,
-                ),
+                child: _buildComparisonDropdown(compOptions, compDropdownItems),
               ),
               const SizedBox(width: 8),
               SizedBox(

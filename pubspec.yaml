@@ -56,10 +56,6 @@ dependencies:
   image_picker: ^1.1.2
   webview_flutter: ^4.13.1
   webview_windows: ^0.4.0
-  section_bar_navigator_system:
-    git:
-      url: https://github.com/binshad-dm/section_bar_navigator_system.git
-      ref: master
   flutter_widget_from_html_core: ^0.17.2
   printing: ^5.14.2
   url_launcher: ^6.3.2
